@@ -55,4 +55,4 @@ def print_message(role, name, content):
     if role == "user":
         print(f"{BOLD}You:{RESET} {content}")
     else:
-        print(f"{BOLD}{name}:{RESET} {content}")
+        print(f"{BOLD}{YELLOW}{name}:{RESET} {content}")
