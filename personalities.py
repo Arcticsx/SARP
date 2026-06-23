@@ -3,8 +3,6 @@ from cli import header, prompt_input, info
 from config import textPrompt
 
 
-
-
 personalities_col = db["personalities"]
 
 def get_personalities():

@@ -4,6 +4,8 @@ from config import MONGO_URI
 from bson import ObjectId
 from cli import prompt_input, print_sessions, success, info
 
+
+
 client = MongoClient(MONGO_URI)
 db = client["chatbot"]
 sessions_col = db["sessions"]

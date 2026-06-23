@@ -12,15 +12,11 @@ def run():
     header(f"Now chatting with {persona['name']}")
     print("Type 'Exit' to quit.\n")
 
-    user_name = prompt_input("Your name (optional): ")
-
-    def render_template(template):
-        return template.replace("{{char}}", persona.get("name", "")).replace("{{user}}", user_name or "You")
 
     template = f"{persona.get('system','')}\n\n{textPrompt}\n\nScenario: {persona.get('Scenario','')}"
     system_message = {
         "role": "system",
-        "content": render_template(template)
+        "content": template
     }
 
     existing_session = pick_session(persona["name"])
@@ -52,6 +48,9 @@ def run():
     # runtime flag: becomes True when the user sends a message during this run
     user_sent = False
 
+    actual_messages = []
+    
+    
     while True:
         user_input = prompt_input("You:")
         if user_input == 'Exit':
@@ -59,9 +58,9 @@ def run():
             # Fall back to the original count-based check for safety.
             if user_sent or sum(1 for m in messages if m.get("role") == "user") > initial_user_count:
                 if existing_session:
-                    save_session(persona["name"], messages, existing_session.get("_id"))
+                    save_session(persona["name"], actual_messages, existing_session.get("_id"))
                 else:
-                    save_session(persona["name"], messages)
+                    save_session(persona["name"], actual_messages)
             else:
                 info("No new user messages — session not saved.")
             print("Exiting...")
@@ -87,5 +86,6 @@ def run():
 
         # Trim only once every TRIM_INTERVAL messages to reduce calls
         if messages_since_trim >= TRIM_INTERVAL:
+            actual_messages.append(messages)
             messages = trim_memory(messages, system_message)
             messages_since_trim = 0
