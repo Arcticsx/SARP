@@ -8,6 +8,9 @@ MONGO_URI = os.getenv("MONGO_URI")
 PROVIDER = os.getenv("PROVIDER")
 API_KEY = os.getenv("API_KEY")
 
+# aisuite model format: "provider:model-name" Ex: openai, anthropic, ollama etc
+AISUITE_MODEL = f"{PROVIDER}:{MODEL}" if PROVIDER and MODEL else None
+
 textPrompt = """You are NOT an AI assistant. You are a real person/character living in your world.
 
 Style rules:

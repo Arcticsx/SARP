@@ -54,7 +54,14 @@ def run():
         messages_since_trim += 1
 
 
-        assistant_msg = get_response(messages)
+        assistant_msg = None
+        try:
+            assistant_msg = get_response(messages)
+        except RuntimeError as e:
+            print(f"[Error] Could not get a response: {e}")
+            print("You can try again or type 'Exit' to quit.\n")
+            continue
+
         print_message("assistant", persona["name"], assistant_msg)
         print()
 

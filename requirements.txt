@@ -1,4 +1,3 @@
-ollama
-openai
+aisuite
 dotenv
 pymongo
