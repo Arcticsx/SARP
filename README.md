@@ -1,6 +1,6 @@
 # Roleplay Chat — Local AI Conversational App
 
-A CLI application for immersive roleplay conversations with AI-powered characters. Supports multiple LLM providers (OpenAI, Anthropic Claude, Ollama) with persistent sessions and customizable personalities.
+A CLI application for immersive roleplay conversations with AI-powered characters. Supports multiple LLM providers (OpenAI, Anthropic Claude, Ollama, Deepseek) with persistent sessions and customizable personalities.
 
 ## Features
 
