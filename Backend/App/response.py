@@ -4,10 +4,14 @@ import time
 from config import AISUITE_MODEL, PROVIDER, API_KEY           
 
 def get_client():
-    # For ollama we need to point aisuite at the local server URL
     provider_configs = {}
     if PROVIDER == "ollama":
         provider_configs["ollama"] = {"base_url": "http://localhost:11434/api"}
+    elif PROVIDER == "deepseek":
+        provider_configs["openai"] = {
+            "api_key": API_KEY,
+            "base_url": "https://api.deepseek.com"
+        }
     return ai.Client(provider_configs=provider_configs if provider_configs else None)
 
 def get_response(messages, retries=3, backoff=2):
