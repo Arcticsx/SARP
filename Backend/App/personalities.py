@@ -1,14 +1,41 @@
 # Manages persona selection and creation
-from database import db
+from database import cursor, conn
 from cli import header, prompt_input, info
 from config import textPrompt
 
-personalities_col = db["personalities"]
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS personalities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    key TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    system TEXT,
+    scenario TEXT,
+    opening_prompt TEXT
+)
+""")
+
+conn.commit()
+
+
 
 def get_personalities():
-    # Return all personas as a dict keyed by their "key" field
-    results = personalities_col.find({}, {"_id": 0})
-    return {p["key"]: p for p in results}
+    
+    cursor.execute("""
+        SELECT key, name, system, scenario, opening_prompt
+        FROM personalities
+    """)
+    results = cursor.fetchall()
+
+    return {
+        row["key"]: {
+            "key": row["key"],
+            "name": row["name"],
+            "system": row["system"],
+            "Scenario": row["scenario"],
+            "opening_prompt": row["opening_prompt"]
+        }
+        for row in results
+    }
 
 
 def create_personality():
@@ -31,7 +58,18 @@ def create_personality():
         "opening_prompt": firstMessage
     }
 
-    personalities_col.insert_one(new_persona)
+    cursor.execute("""
+        INSERT INTO personalities
+        (key, name, system, scenario, opening_prompt)
+        VALUES (?, ?, ?, ?, ?)
+    """, (
+        new_persona["key"],
+        new_persona["name"],
+        new_persona["system"],
+        new_persona["Scenario"],
+        new_persona["opening_prompt"]
+    ))
+    conn.commit()
     info(f"Persona '{name}' created!")
     return new_persona
 

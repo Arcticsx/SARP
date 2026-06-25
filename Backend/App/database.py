@@ -1,59 +1,114 @@
 # Handles all MongoDB operations for sessions
 import sys
-from pymongo import MongoClient
 from datetime import datetime
-from config import MONGO_URI
-from bson import ObjectId
 from cli import prompt_input, print_sessions, success, info
-from bson.errors import InvalidId
+from pathlib import Path
+import sqlite3
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+print(BASE_DIR)
+
+conn = sqlite3.connect(BASE_DIR/"data/chatbot.db")
+conn.row_factory = sqlite3.Row
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    persona TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+)
+""")
+conn.commit()
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id INTEGER NOT NULL,
+    sender TEXT NOT NULL,
+    content TEXT NOT NULL,
+    FOREIGN KEY (session_id) REFERENCES sessions(id)
+)
+""")
+conn.commit()
 
 
-# Module-level connection — shared across all DB calls
-client = MongoClient(MONGO_URI)
-db = client["chatbot"]
-sessions_col = db["sessions"]
+
 
 def save_session(persona_name, messages, session_id=None):
-    # Save a new session or update an existing one.
-
-    # If `session_id` is provided, update that document instead of inserting.
-    
     if not messages:
         info("No messages to save.")
         return
 
-    
-    now = datetime.now()
-    if session_id:
-        # Accept either ObjectId or raw string
-        try:
-            _id = ObjectId(session_id)
-        except InvalidId:
-            _id = session_id
-        result = sessions_col.update_one(
-            {"_id": _id},
-            {"$set": {"persona": persona_name, "messages": messages, "updated_at": now}}
-        )
-        if result.matched_count:
-            success("Session updated.")
-            return
+    now = datetime.now().isoformat()
 
-    # No matching document found — insert a new one
-    sessions_col.insert_one({
-        "persona": persona_name,
-        "messages": messages,
-        "created_at": now,
-        "updated_at": now
-    })
+    if session_id:
+
+        cursor.execute("""
+            UPDATE sessions
+            SET persona=?, updated_at=?
+            WHERE id=?
+        """, (persona_name, now, session_id))
+
+    else:
+    
+        cursor.execute("""
+            INSERT INTO sessions(persona, created_at, updated_at)
+            VALUES (?, ?, ?)
+        """, (persona_name, now, now))
+
+        session_id = cursor.lastrowid
+
+    for msg in messages:
+
+        if "id" in msg:
+            cursor.execute("""
+                UPDATE messages
+                SET session_id=?, sender=?, content=?
+                WHERE id=?
+            """, (
+                session_id,
+                msg["role"],
+                msg["content"],
+                msg["id"]
+            ))
+
+
+        else:
+            cursor.execute("""
+                INSERT INTO messages(session_id, sender, content)
+                VALUES (?, ?, ?)
+            """, (
+                session_id,
+                msg["role"],
+                msg["content"]
+            ))
+
+    conn.commit()
     success("Session saved.")
+                       
+                       
 
 def get_sessions(persona_name):
-    # Return the 5 most recent sessions for this persona
-    results = sessions_col.find(
-        {"persona": persona_name},
-        {"_id": 1, "created_at": 1, "messages": 1}
-    ).sort("created_at", -1).limit(5)
-    return list(results)
+    cursor.execute("""
+        SELECT id, persona, created_at, updated_at
+        FROM sessions
+        WHERE persona = ?
+        ORDER BY updated_at DESC
+        LIMIT 5
+    """, (persona_name,))
+
+    rows = cursor.fetchall()
+
+    return [
+        {
+            "id": row[0],
+            "persona": row[1],
+            "created_at": row[2],
+            "updated_at": row[3]
+        }
+        for row in rows
+    ]
 
 def pick_session(persona_name):
     sessions = get_sessions(persona_name)
