@@ -22,24 +22,32 @@ def run():
 
     # Load an existing session or start fresh
     messages, existing_session, full_messages = load_session(persona, system_message)
+    
+    messages = [
+        {k: v for k, v in msg.items() if k != "id"}
+        for msg in messages
+    ]   
 
     # Track how many user messages existed before this run (for save-on-exit logic)
     initial_user_count = sum(1 for m in messages if m.get("role") == "user")
     user_sent = False       # becomes True once the user sends their first message
 
     # full_messages is the complete untruncated history used for saving to DB
-    actual_messages = full_messages
+    message_id = max(
+        (m.get("id", 0) for m in full_messages),
+        default=0
+    )
 
     while True:
         user_input = prompt_input("You:")
         print()
         if user_input == 'Exit':
             # Only save if the user actually sent something new this run
-            if user_sent or sum(1 for m in actual_messages if m.get("role") == "user") > initial_user_count:
+            if user_sent or sum(1 for m in full_messages if m.get("role") == "user") > initial_user_count:
                 if existing_session:
-                    save_session(persona["name"], actual_messages, existing_session.get("_id"))
+                    save_session(persona["name"], full_messages, existing_session.get("_id"))
                 else:
-                    save_session(persona["name"], actual_messages)
+                    save_session(persona["name"], full_messages)
             else:
                 info("No new user messages — session not saved.")
             print("Exiting...")
@@ -67,8 +75,19 @@ def run():
 
         # Summarise and compress history once the trim interval is reached
       
-        actual_messages.append({"role": "user", "content": user_input})
-        actual_messages.append({"role": "assistant", "content": assistant_msg})
+        message_id+=1
+
+        full_messages.append({
+            "id": message_id + 1,
+            "role": "user",
+            "content": user_input
+        })
+
+        full_messages.append({
+            "id": message_id + 2,
+            "role": "assistant",
+            "content": assistant_msg
+        })
 
         messages = trim_memory(messages, system_message)
 
