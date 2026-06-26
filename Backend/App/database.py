@@ -43,9 +43,7 @@ conn.commit()
 
 
 def get_sessions(persona_name):
-    """
-    Return last 5 sessions for a persona
-    """
+    
     cursor.execute("""
         SELECT id, persona, created_at, updated_at
         FROM sessions
@@ -65,42 +63,32 @@ def get_sessions(persona_name):
     ]
 
 
-def get_session_by_index(persona_name, index=0):
-    """
-    Get session by position in latest sessions list
-    index=0 → latest session
-    """
-    sessions = get_sessions(persona_name)
+def get_session_by_index(persona_name, index: int):
+    cursor.execute("""
+        SELECT id, persona, created_at, updated_at
+        FROM sessions
+        WHERE persona=?
+        ORDER BY updated_at DESC
+        LIMIT 1 OFFSET ?
+    """, (persona_name, index))
 
-    if not sessions:
+    row = cursor.fetchone()
+
+    if not row:
         return None
 
-    if 0 <= index < len(sessions):
-        return sessions[index]
-
-    return None
-
-
-def pick_session(persona_name):
-    """
-    Pick latest session automatically
-    """
-    return get_session_by_index(persona_name, 0)
+    return {
+        "id": row["id"],
+        "persona": row["persona"],
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"]
+    }
 
 
-def load_session(persona, system_message):
-    """
-    Load existing session or create new conversation
-    """
+def load_session(persona, system_message, session=None):
 
-    existing_session = (
-        pick_session(persona["name"])
-        if persona and persona.get("name")
-        else None
-    )
-
-    if existing_session:
-        session_id = existing_session["id"]
+    if session:
+        session_id = session["id"]
 
         cursor.execute("""
             SELECT id, sender, content
@@ -110,104 +98,57 @@ def load_session(persona, system_message):
         """, (session_id,))
 
         rows = cursor.fetchall()
-
         messages = [system_message]
 
         for row in rows:
-            # Ignore accidental old system messages
-            if row["sender"] == "system":
+            if row["sender"] == "system":   # ← was row[1] / role[1], both wrong
                 continue
-
             messages.append({
                 "id": row["id"],
-                "role": row["sender"],
+                "role": row["sender"],      # ← column is "sender" not "role"
                 "content": row["content"]
             })
-
     else:
-        first_msg = (
-            persona.get(
-                "opening_prompt",
-                "Introduce yourself and start the conversation."
-            )
-            if persona
-            else "Introduce yourself and start the conversation."
+        first_msg = persona.get(
+            "opening_prompt",
+            "Introduce yourself and start the conversation."
         )
-
         messages = [
             system_message,
-            {
-                "role": "assistant",
-                "content": first_msg
-            }
+            {"role": "assistant", "content": first_msg}
         ]
 
-    # Keep full history
     full_messages = messages.copy()
 
-    # Trim if too long
     if len(messages) > 15:
         messages = trim_memory(messages, system_message)
 
-    return messages, existing_session, full_messages
+    return messages, full_messages
 
 
 def save_session(persona_name, messages, session_id=None):
-    """
-    Save/update session and messages
-    """
-
     if not messages:
         return None
 
     now = datetime.now().isoformat()
 
     if session_id:
-        # Update existing session
         cursor.execute("""
-            UPDATE sessions
-            SET persona=?, updated_at=?
-            WHERE id=?
+            UPDATE sessions SET persona=?, updated_at=? WHERE id=?
         """, (persona_name, now, session_id))
-
-        # Replace messages
-        cursor.execute("""
-            DELETE FROM messages
-            WHERE session_id=?
-        """, (session_id,))
-
+        cursor.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
     else:
-        # Create new session
         cursor.execute("""
-            INSERT INTO sessions
-            (persona, created_at, updated_at)
-            VALUES (?, ?, ?)
+            INSERT INTO sessions(persona, created_at, updated_at) VALUES (?, ?, ?)
         """, (persona_name, now, now))
-
         session_id = cursor.lastrowid
 
-    # Save messages
     for msg in messages:
         if msg.get("role") == "system":
             continue
-
         cursor.execute("""
-            INSERT INTO messages
-            (session_id, sender, content)
-            VALUES (?, ?, ?)
-        """, (
-            session_id,
-            msg["role"],
-            msg["content"]
-        ))
+            INSERT INTO messages(session_id, sender, content) VALUES (?, ?, ?)
+        """, (session_id, msg["role"], msg["content"]))
 
     conn.commit()
-
     return session_id
-
-
-def close_db():
-    """
-    Close database connection safely
-    """
-    conn.close()

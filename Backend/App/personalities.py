@@ -82,4 +82,5 @@ def pick_personality(choice: str):
     if choice not in personalities:
         return list(personalities.values())[0]
 
+
     return normalized[choice] 

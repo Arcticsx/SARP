@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from personalities import get_personalities, create_personality, pick_personality
-from database import save_session, load_session
+from database import save_session, load_session, get_session_by_index, get_sessions
 from response import get_response
 from memory import trim_memory
 from config import textPrompt
@@ -42,31 +42,80 @@ def pick_persona(body: PickPersonaRequest):
 
 
 #------------------SESSIONS----------------------
+@app.get("/sessions/{persona_name}")
+def list_sessions(persona_name: str):
+    """Get the last 5 sessions for a persona."""
+    sessions = get_sessions(persona_name)
+    if not sessions:
+        return {"sessions": [], "message": "No previous sessions found."}
+    return {"sessions": sessions}
+
+
+class PickSessionRequest(BaseModel):
+    persona_name: str
+    index: int | None = None  # None = start new session
+
+@app.post("/sessions/pick")
+def pick_session_endpoint(body: PickSessionRequest):
+    """Pick a session by index, or pass null index to start a new one."""
+    if body.index is None:
+        return {"session": None, "new": True}
+
+    session = get_session_by_index(body.persona_name, body.index - 1)  # 1-based
+    if not session:
+        return {"session": None, "new": True, "warning": "Index out of range, starting new session."}
+
+    return {"session": session, "new": False}
+
+class SessionData(BaseModel):
+    id: int
+    persona: str
+    created_at: str
+    updated_at: str
 
 class LoadSessionRequest(BaseModel):
     persona_key: str
+    session: SessionData | None = None  # pass null to start fresh
+    
 
 @app.post("/sessions/load")
 def load(body: LoadSessionRequest):
     personalities = get_personalities()
     persona = personalities.get(body.persona_key)
-    
     if not persona:
         raise HTTPException(status_code=404, detail="Persona not found.")
-    
+
     template = f"{persona.get('system','')}\n\n{textPrompt}\n\nScenario: {persona.get('Scenario','')}"
     system_message = {"role": "system", "content": template}
 
-    messages, existing_session, full_messages = load_session(persona, system_message)
-
+    # Convert Pydantic model to dict if session exists
+    session_dict = body.session.model_dump() if body.session else None
+    messages, full_messages = load_session(persona, system_message, session_dict)
+    
+    # Remove id field from messages for clean response
     clean = [{k: v for k, v in m.items() if k != "id"} for m in messages]
 
     return {
-        "session_id": existing_session["id"] if existing_session else None,
+        "session": session_dict,
         "messages": clean,
         "full_messages": full_messages,
-        "resumed": existing_session is not None
+        "resumed": body.session is not None
     }
+
+class SaveSessionRequest(BaseModel):
+    persona_key: str
+    full_messages: list[dict]
+    session_id: int | None = None
+
+@app.post("/sessions/save")
+def save(body: SaveSessionRequest):
+    personalities = get_personalities()
+    persona = personalities.get(body.persona_key)
+    if not persona:
+        raise HTTPException(status_code=404, detail="Persona not found.")
+    session_id = save_session(persona["name"], body.full_messages, body.session_id)
+    return {"saved": True, "session_id": session_id}
+
     
 # ── Chat ───────────────────────────────────────────────────
 
@@ -111,17 +160,3 @@ def chat(body: ChatRequest):
         "messages": messages,
         "full_messages": full_messages,
     }
-
-class SaveSessionRequest(BaseModel):
-    persona_key: str
-    full_messages: list[dict]
-    session_id: int | None = None
-
-@app.post("/sessions/save")
-def save(body: SaveSessionRequest):
-    personalities = get_personalities()
-    persona = personalities.get(body.persona_key)
-    if not persona:
-        raise HTTPException(status_code=404, detail="Persona not found.")
-    save_session(persona["name"], body.full_messages, body.session_id)
-    return {"saved": True}
