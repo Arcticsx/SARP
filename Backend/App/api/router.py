@@ -33,30 +33,41 @@ def list_personalities():
 
 class CreatePersonaRequest(BaseModel):
     name: str
+    description: str | None = None
     system: str
     scenario: str
     opening_prompt: str
+    avatar: str | None = None
     
 @app.post("/personalities", status_code=201)
 def create_persona(body:CreatePersonaRequest):
     return create_personality(
-        body.name, body.system, body.scenario, body.opening_prompt
+        body.name,
+        body.description,
+        body.system,
+        body.scenario,
+        body.opening_prompt,
+        body.avatar,
     )
 
 class UpdatePersonaRequest(BaseModel):
     name: str
+    description: str | None = None
     system: str
     scenario: str
     opening_prompt: str
+    avatar: str | None = None
 
 @app.put("/personalities/{persona_key}")
 def update_persona(persona_key: str, body: UpdatePersonaRequest):
     updated = update_personality(
         persona_key,
         body.name,
+        body.description,
         body.system,
         body.scenario,
         body.opening_prompt,
+        body.avatar,
     )
     if not updated:
         raise HTTPException(status_code=404, detail="Persona not found.")

@@ -1,23 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
+import ConfirmModal from './ConfirmModal.jsx';
+import EditModal from './EditModal.jsx';
 import './PersonalitySelector.css';
 
 function PersonalitySelector({ onPersonaSelected }) {
   const [personalities, setPersonalities] = useState({});
-  const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingPersonaKey, setEditingPersonaKey] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    system: '',
-    scenario: '',
-    opening_prompt: ''
-  });
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [modalInitialData, setModalInitialData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     loadPersonalities();
   }, []);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(''), 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   const loadPersonalities = async () => {
     setError('');
@@ -27,7 +34,7 @@ function PersonalitySelector({ onPersonaSelected }) {
       setPersonalities(data);
     } catch (error) {
       console.error('Failed to load personalities:', error);
-      setError('Unable to load personas. Confirm the backend is running on localhost:8000.');
+      setError('Unable to load personalities. Confirm the backend is running on localhost:8000.');
       setPersonalities({});
     }
     setLoading(false);
@@ -37,70 +44,74 @@ function PersonalitySelector({ onPersonaSelected }) {
     onPersonaSelected(persona);
   };
 
-  const handleCreateSubmit = async (e) => {
-    e.preventDefault();
+  const handleSavePersona = async (data) => {
     setLoading(true);
     setError('');
+    setToast('');
     try {
       const savedPersona = editingPersonaKey
-        ? await api.updatePersonality(editingPersonaKey, formData)
-        : await api.createPersonality(formData);
-
+        ? await api.updatePersonality(editingPersonaKey, data)
+        : await api.createPersonality(data);
       await loadPersonalities();
-      setShowCreateForm(false);
+      setEditModalOpen(false);
       setEditingPersonaKey(null);
-      setFormData({ name: '', system: '', scenario: '', opening_prompt: '' });
-      onPersonaSelected(savedPersona);
+      setModalInitialData(null);
+      setToast('Persona saved successfully');
     } catch (error) {
       console.error('Failed to save personality:', error);
       setError(`Failed to save personality: ${error.message}`);
-      alert(`Failed to save personality: ${error.message}`);
+      setToast(`Failed to save: ${error.message}`);
     }
     setLoading(false);
-  };
-
-  const handleInputChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleEditPersona = (e, persona) => {
     e.stopPropagation();
     setEditingPersonaKey(persona.key);
-    setFormData({
-      name: persona.name || '',
-      system: persona.system || '',
-      scenario: persona.Scenario || '',
-      opening_prompt: persona.opening_prompt || ''
-    });
-    setShowCreateForm(true);
+    setModalInitialData(persona);
+    setEditModalOpen(true);
   };
 
   const handleDeletePersona = async (e, persona) => {
     e.stopPropagation();
-    if (!window.confirm(`Delete persona '${persona.name}'?`)) {
-      return;
-    }
+    setConfirmTarget(persona);
+    setConfirmOpen(true);
+  };
 
+  const doDeleteConfirmed = async () => {
+    if (!confirmTarget) return;
+    setConfirmOpen(false);
     setLoading(true);
     setError('');
+    setToast('');
     try {
-      await api.deletePersonality(persona.key);
+      await api.deletePersonality(confirmTarget.key);
+      setToast(`Deleted ${confirmTarget.name}`);
       await loadPersonalities();
     } catch (error) {
       console.error('Failed to delete personality:', error);
       setError(`Failed to delete personality: ${error.message}`);
-      alert(`Failed to delete personality: ${error.message}`);
+      setToast(`Delete failed: ${error.message}`);
     }
+    setConfirmTarget(null);
     setLoading(false);
   };
 
   const handleCancelEdit = () => {
-    setShowCreateForm(false);
+    setEditModalOpen(false);
     setEditingPersonaKey(null);
-    setFormData({ name: '', system: '', scenario: '', opening_prompt: '' });
+    setModalInitialData(null);
   };
 
   const personalityList = Object.values(personalities);
+  const filteredPersonalities = personalityList.filter((persona) => {
+    const search = query.toLowerCase();
+    return (
+      persona.name.toLowerCase().includes(search) ||
+      String(persona.key).includes(search) ||
+      (persona.description || '').toLowerCase().includes(search)
+    );
+  });
 
   return (
     <div className="personality-selector">
@@ -114,113 +125,100 @@ function PersonalitySelector({ onPersonaSelected }) {
           </button>
         </div>
       )}
+      {toast && <div className="toast">{toast}</div>}
       {loading && <p>Loading...</p>}
 
-      {!showCreateForm && (
-        <>
-          <div className="personality-list">
-            {personalityList.length === 0 && !loading && (
-              <p>No personalities found. Create one to get started.</p>
-            )}
+      <div className="personality-controls">
+        <input
+          placeholder="Search by name, key, or description"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <button
+          className="btn-create"
+          type="button"
+          onClick={() => {
+            setEditingPersonaKey(null);
+            setModalInitialData(null);
+            setEditModalOpen(true);
+          }}
+          disabled={loading}
+        >
+          + CREATE NEW PERSONALITY
+        </button>
+      </div>
 
-            {personalityList.map((persona) => (
-              <div key={persona.key} className="personality-item">
-                <div className="persona-info" onClick={() => handlePersonaClick(persona)}>
-                  <div className="persona-key">[{persona.key}]</div>
-                  <div className="persona-name">{persona.name}</div>
-                </div>
-                <div className="persona-actions">
-                  <button
-                    type="button"
-                    className="btn-edit"
-                    onClick={(e) => handleEditPersona(e, persona)}
-                    disabled={loading}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-delete"
-                    onClick={(e) => handleDeletePersona(e, persona)}
-                    disabled={loading}
-                  >
-                    Delete
-                  </button>
-                </div>
+      <div className="personality-list personality-card-grid">
+        {filteredPersonalities.length === 0 && !loading && (
+          <p className="empty-state">No personalities found. Create one to get started.</p>
+        )}
+
+        {filteredPersonalities.map((persona) => (
+          <div key={persona.key} className="persona-card">
+            <div className="persona-card-top">
+              <div className="persona-avatar-wrap" onClick={() => handlePersonaClick(persona)}>
+                {persona.avatar ? (
+                  <img src={persona.avatar} alt={persona.name} className="persona-avatar" />
+                ) : (
+                  <div className="persona-avatar-fallback">{(persona.name || 'P').charAt(0)}</div>
+                )}
               </div>
-            ))}
-          </div>
+              <div className="persona-card-meta" onClick={() => handlePersonaClick(persona)}>
+                <div className="persona-card-name">{persona.name}</div>
+                <div className="persona-card-key">{persona.key ? `#${persona.key}` : 'untagged'}</div>
+              </div>
+            </div>
 
-          <button 
-            className="btn-create"
-            onClick={() => setShowCreateForm(true)}
-          >
-            + CREATE NEW PERSONALITY
-          </button>
-        </>
-      )}
+            {persona.description && <div className="persona-card-description">{persona.description}</div>}
 
-      {showCreateForm && (
-        <form className="create-form" onSubmit={handleCreateSubmit}>
-          <h2>{editingPersonaKey ? 'Edit Personality' : 'Create Personality'}</h2>
-          <div className="form-group">
-            <label>Name:</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-            />
+            <div className="persona-card-bottom">
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => handlePersonaClick(persona)}
+              >
+                Open persona
+              </button>
+              <div className="persona-card-actions">
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={(e) => handleEditPersona(e, persona)}
+                  disabled={loading}
+                  title="Edit personality"
+                >
+                  ✎
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon btn-delete"
+                  onClick={(e) => handleDeletePersona(e, persona)}
+                  disabled={loading}
+                  title="Delete personality"
+                >
+                  🗑
+                </button>
+              </div>
+            </div>
           </div>
+        ))}
+      </div>
 
-          <div className="form-group">
-            <label>System Prompt:</label>
-            <textarea
-              name="system"
-              value={formData.system}
-              onChange={handleInputChange}
-              rows="4"
-              required
-            />
-          </div>
+      <EditModal
+        open={editModalOpen}
+        initialData={modalInitialData}
+        onSave={handleSavePersona}
+        onCancel={handleCancelEdit}
+        saving={loading}
+      />
 
-          <div className="form-group">
-            <label>Scenario:</label>
-            <textarea
-              name="scenario"
-              value={formData.scenario}
-              onChange={handleInputChange}
-              rows="4"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Opening Prompt:</label>
-            <textarea
-              name="opening_prompt"
-              value={formData.opening_prompt}
-              onChange={handleInputChange}
-              rows="3"
-              required
-            />
-          </div>
-
-          <div className="form-buttons">
-            <button type="submit" disabled={loading}>
-              {loading ? (editingPersonaKey ? 'Saving...' : 'Creating...') : (editingPersonaKey ? 'Save' : 'Create')}
-            </button>
-            <button 
-              type="button" 
-              onClick={handleCancelEdit}
-              disabled={loading}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
+      <ConfirmModal
+        open={confirmOpen}
+        title="Delete Persona"
+        message={confirmTarget ? `Delete persona '${confirmTarget.name}'? This cannot be undone.` : ''}
+        onConfirm={doDeleteConfirmed}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   );
 }

@@ -10,9 +10,17 @@ CREATE TABLE IF NOT EXISTS personalities (
     name TEXT NOT NULL,
     system TEXT,
     scenario TEXT,
-    opening_prompt TEXT
+    opening_prompt TEXT,
+    avatar TEXT
 )
 """)
+
+cursor.execute("PRAGMA table_info(personalities)")
+column_names = [row[1] for row in cursor.fetchall()]
+if 'description' not in column_names:
+    cursor.execute("ALTER TABLE personalities ADD COLUMN description TEXT")
+if 'avatar' not in column_names:
+    cursor.execute("ALTER TABLE personalities ADD COLUMN avatar TEXT")
 
 conn.commit()
 
@@ -21,7 +29,7 @@ conn.commit()
 def get_personalities():
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT key, name, system, scenario, opening_prompt
+        SELECT key, name, description, system, scenario, opening_prompt, avatar
         FROM personalities
     """)
     results = cursor.fetchall()
@@ -30,15 +38,17 @@ def get_personalities():
         row["key"]: {
             "key": row["key"],
             "name": row["name"],
+            "description": row["description"] or '',
             "system": row["system"],
             "Scenario": row["scenario"],
-            "opening_prompt": row["opening_prompt"]
+            "opening_prompt": row["opening_prompt"],
+            "avatar": row["avatar"] or ''
         }
         for row in results
     }
 
 
-def create_personality(name: str, system: str, scenario: str, opening_prompt: str):
+def create_personality(name: str, description: str | None, system: str, scenario: str, opening_prompt: str, avatar: str | None = None):
     cursor = conn.cursor()
     personalities = get_personalities()
     keys = []
@@ -52,27 +62,31 @@ def create_personality(name: str, system: str, scenario: str, opening_prompt: st
     new_persona = {
         "key": next_key,
         "name": name,
+        "description": description or '',
         "system": system,
         "Scenario": scenario,
-        "opening_prompt": opening_prompt
+        "opening_prompt": opening_prompt,
+        "avatar": avatar or ''
     }
 
     cursor.execute("""
         INSERT INTO personalities
-        (key, name, system, scenario, opening_prompt)
-        VALUES (?, ?, ?, ?, ?)
+        (key, name, description, system, scenario, opening_prompt, avatar)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         new_persona["key"],
         new_persona["name"],
+        new_persona["description"],
         new_persona["system"],
         new_persona["Scenario"],
-        new_persona["opening_prompt"]
+        new_persona["opening_prompt"],
+        new_persona["avatar"]
     ))
     conn.commit()
     return new_persona
 
 
-def update_personality(key: str, name: str, system: str, scenario: str, opening_prompt: str):
+def update_personality(key: str, name: str, description: str | None, system: str, scenario: str, opening_prompt: str, avatar: str | None = None):
     cursor = conn.cursor()
     cursor.execute("SELECT key FROM personalities WHERE key = ?", (key,))
     if not cursor.fetchone():
@@ -80,13 +94,15 @@ def update_personality(key: str, name: str, system: str, scenario: str, opening_
 
     cursor.execute("""
         UPDATE personalities
-        SET name = ?, system = ?, scenario = ?, opening_prompt = ?
+        SET name = ?, description = ?, system = ?, scenario = ?, opening_prompt = ?, avatar = ?
         WHERE key = ?
     """, (
         name,
+        description or '',
         system,
         scenario,
         opening_prompt,
+        avatar or '',
         key
     ))
     conn.commit()
@@ -94,9 +110,11 @@ def update_personality(key: str, name: str, system: str, scenario: str, opening_
     return {
         "key": key,
         "name": name,
+        "description": description or '',
         "system": system,
         "Scenario": scenario,
-        "opening_prompt": opening_prompt
+        "opening_prompt": opening_prompt,
+        "avatar": avatar or ''
     }
 
 

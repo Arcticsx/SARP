@@ -1,0 +1,80 @@
+.edit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+}
+
+.edit-modal {
+  background: #1e1e1e;
+  padding: 18px;
+  border-radius: 8px;
+  width: 520px;
+  color: #d4d4d4;
+  border: 1px solid #3e3e3e;
+}
+
+.edit-modal.glass {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(8px) saturate(120%);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+}
+
+.edit-modal h3 {
+  margin-top: 0;
+}
+
+.edit-modal label {
+  display: block;
+  margin-top: 10px;
+  color: #9be7d0;
+}
+
+.edit-modal input,
+.edit-modal textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+  background: #121212;
+  border: 1px solid #333;
+  color: #e6e6e6;
+}
+
+.field-error {
+  color: #ffb3b3;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}   
+
+.btn-cancel {
+  background: #3e3e3e;
+  color: #d4d4d4;
+  border: none;
+  padding: 8px 12px;
+}
+
+.btn-save {
+  background: #0e639c;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+}
+
+.avatar-preview img {
+  max-width: 96px;
+  max-height: 96px;
+  margin-top: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
