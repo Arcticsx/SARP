@@ -72,6 +72,41 @@ def create_personality(name: str, system: str, scenario: str, opening_prompt: st
     return new_persona
 
 
+def update_personality(key: str, name: str, system: str, scenario: str, opening_prompt: str):
+    cursor = conn.cursor()
+    cursor.execute("SELECT key FROM personalities WHERE key = ?", (key,))
+    if not cursor.fetchone():
+        return None
+
+    cursor.execute("""
+        UPDATE personalities
+        SET name = ?, system = ?, scenario = ?, opening_prompt = ?
+        WHERE key = ?
+    """, (
+        name,
+        system,
+        scenario,
+        opening_prompt,
+        key
+    ))
+    conn.commit()
+
+    return {
+        "key": key,
+        "name": name,
+        "system": system,
+        "Scenario": scenario,
+        "opening_prompt": opening_prompt
+    }
+
+
+def delete_personality(key: str):
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM personalities WHERE key = ?", (key,))
+    conn.commit()
+    return cursor.rowcount > 0
+
+
 def pick_personality(choice: str):
     # List available personas and let the user choose or create a new one
     personalities = get_personalities()

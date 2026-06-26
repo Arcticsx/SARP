@@ -40,13 +40,29 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ choice })
     });
-    return res.json();
+    return handleResponse(res);
+  },
+
+  async updatePersonality(personaKey, data) {
+    const res = await fetch(`${API_BASE}/personalities/${encodeURIComponent(personaKey)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return handleResponse(res);
+  },
+
+  async deletePersonality(personaKey) {
+    const res = await fetch(`${API_BASE}/personalities/${encodeURIComponent(personaKey)}`, {
+      method: 'DELETE'
+    });
+    return handleResponse(res);
   },
 
   // Sessions
   async getSessions(personaName) {
     const res = await fetch(`${API_BASE}/sessions/${encodeURIComponent(personaName)}`);
-    return res.json();
+    return handleResponse(res);
   },
 
   async pickSession(personaName, index) {
@@ -58,7 +74,7 @@ export const api = {
         index 
       })
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   async loadSession(personaKey, session) {
@@ -70,7 +86,7 @@ export const api = {
         session 
       })
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   async saveSession(personaKey, fullMessages, sessionId) {
@@ -83,7 +99,7 @@ export const api = {
         session_id: sessionId
       })
     });
-    return res.json();
+    return handleResponse(res);
   },
 
   // Chat
@@ -99,6 +115,6 @@ export const api = {
         user_input: userInput
       })
     });
-    return res.json();
+    return handleResponse(res);
   }
 };

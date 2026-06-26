@@ -1,7 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from personalities import get_personalities, create_personality, pick_personality
+from personalities import (
+    get_personalities,
+    create_personality,
+    update_personality,
+    delete_personality,
+    pick_personality,
+)
 from database import save_session, load_session, get_session_by_index, get_sessions
 from response import get_response
 from memory import trim_memory
@@ -34,8 +40,34 @@ class CreatePersonaRequest(BaseModel):
 @app.post("/personalities", status_code=201)
 def create_persona(body:CreatePersonaRequest):
     return create_personality(
-        body.name, body.system,body.scenario, body.opening_prompt
+        body.name, body.system, body.scenario, body.opening_prompt
     )
+
+class UpdatePersonaRequest(BaseModel):
+    name: str
+    system: str
+    scenario: str
+    opening_prompt: str
+
+@app.put("/personalities/{persona_key}")
+def update_persona(persona_key: str, body: UpdatePersonaRequest):
+    updated = update_personality(
+        persona_key,
+        body.name,
+        body.system,
+        body.scenario,
+        body.opening_prompt,
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Persona not found.")
+    return updated
+
+@app.delete("/personalities/{persona_key}")
+def delete_persona(persona_key: str):
+    deleted = delete_personality(persona_key)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Persona not found.")
+    return {"deleted": True}
 
 class PickPersonaRequest(BaseModel):
     choice: str

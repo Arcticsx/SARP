@@ -8,6 +8,15 @@
   color: #4ec9b0;
 }
 
+.error-message {
+  margin-bottom: 16px;
+  padding: 12px;
+  color: #ffcdcd;
+  background-color: #5d1f1f;
+  border: 1px solid #8b0000;
+  border-radius: 4px;
+}
+
 .personality-list {
   margin-bottom: 20px;
 }
@@ -17,8 +26,8 @@
   margin-bottom: 10px;
   background-color: #2d2d2d;
   border: 1px solid #3e3e3e;
-  cursor: pointer;
   display: flex;
+  justify-content: space-between;
   gap: 10px;
   align-items: center;
 }
@@ -26,6 +35,19 @@
 .personality-item:hover {
   background-color: #3e3e3e;
   border-color: #4ec9b0;
+}
+
+.persona-info {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.persona-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .persona-key {
@@ -109,4 +131,30 @@
 
 .form-buttons button[type="button"]:hover:not(:disabled) {
   background-color: #4e4e4e;
+}
+
+.btn-edit,
+.btn-delete {
+  padding: 8px 12px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-edit {
+  background-color: #0e639c;
+  color: white;
+}
+
+.btn-edit:hover:not(:disabled) {
+  background-color: #1177bb;
+}
+
+.btn-delete {
+  background-color: #8b0000;
+  color: white;
+}
+
+.btn-delete:hover:not(:disabled) {
+  background-color: #a70000;
 }
