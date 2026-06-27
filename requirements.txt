@@ -2,6 +2,7 @@ aisuite
 python-dotenv
 pymongo
 fastapi
+pydantic
 uvicorn
 aiofiles
 python-multipart
