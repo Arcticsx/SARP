@@ -13,8 +13,9 @@ A CLI application for immersive roleplay conversations with AI-powered character
 ## Requirements
 
 - Python 3.11+ (tested on 3.13)
+- Node.js 18+ and npm
 - MongoDB (for session persistence)
-- API key for your chosen provider (OpenAI or Anthropic)
+- API key for your chosen provider (OpenAI, Anthropic, or an Ollama-compatible provider)
 
 ## Quick Start
 
@@ -52,9 +53,17 @@ MONGO_URI=mongodb://localhost:27017
 
 ### 3. Run the Application
 
+From the project root, start both the backend and frontend with:
+
 ```powershell
-cd backend/app
-python main.py
+npm run fboth
+```
+
+You can also run them separately:
+
+```powershell
+npm run backend
+npm run frontend
 ```
 
 ## Usage
@@ -66,21 +75,26 @@ python main.py
 ## Project Structure
 
 ```
-backend/
-├── app/
+Backend/
+├── App/
 │   ├── main.py            # Entry point
 │   ├── chat.py            # Main chat loop and orchestration
 │   ├── cli.py             # CLI utilities (formatting, input/output)
 │   ├── config.py          # Configuration and environment loading
-│   ├── database.py        # MongoDB session persistence
+│   ├── database.py        # Session persistence
 │   ├── memory.py          # Conversation summarization and trimming
 │   ├── personalities.py   # Personality definitions and selection
 │   ├── response.py        # LLM provider integration
-│   └── session_manager.py # Session loading/resumption logic
+│   └── api/
+│       └── router.py      # FastAPI endpoints
 └── tests/
     ├── conftest.py        # Test fixtures
     ├── test_personalities.py
     └── test_memory.py
+
+frontend/
+├── src/
+└── package.json
 ```
 
 ## Dependencies
