@@ -1,10 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getImageUrl } from '../api';
+import { api, getImageUrl } from '../api';
 
 function Sidebar({ activeView, onViewChange, onCreateClick }) {
   const [width, setWidth] = useState(224);
+  const [recentSessions, setRecentSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.getRecentSessions()
+      .then(data => setRecentSessions(data.sessions || []))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
 
   const handleMouseDown = useCallback((e) => {
     e.preventDefault();
@@ -41,22 +59,18 @@ function Sidebar({ activeView, onViewChange, onCreateClick }) {
         onClick={() => navigate('/')}
         className="group relative px-10 pb-6 text-center cursor-pointer transition-all duration-300 hover:scale-105"
       >
-        {/* background glow */}
         <div className="absolute inset-0 -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
           <div className="absolute inset-0 bg-accent/20 blur-2xl rounded-full"></div>
         </div>
-        
         <div className="relative inline-block">
           <span className="text-3xl font-bold tracking-tight text-text/90 hover:text-text transition-colors duration-300">
             SARP.
           </span>
-          
-          {/* dot */}
           <span className="absolute -bottom-1 -right-1 h-2 w-12 bg-accent rounded-full animate-pulse"></span>
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-3">
+      <nav className="flex flex-col gap-1 px-3">
         {items.map((item) => {
           const isActive = activeView === item.key;
           return (
@@ -69,26 +83,64 @@ function Sidebar({ activeView, onViewChange, onCreateClick }) {
               }`}
               onClick={item.key === 'create' ? onCreateClick : () => onViewChange(item.key)}
             >
-              {/* Active indicator bar */}
               {isActive && (
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-0.5 bg-accent rounded-r-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
               )}
-              
-              <span className={`flex h-5 w-5 items-center justify-center transition-transform duration-200 ${
-                isActive ? 'scale-110' : ''
-              }`}>
+              <span className={`flex h-5 w-5 items-center justify-center transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
                 {item.icon}
               </span>
               <span className="leading-none">{item.label}</span>
-              
-              {/* Hover effect */}
-              <div className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-white/5 transition-opacity duration-300"></div>
-              </div>
             </button>
           );
         })}
       </nav>
+
+      {/* Recent Sessions */}
+      <div className="mt-4 flex flex-col gap-1 px-3 overflow-y-auto flex-1">
+        <p className="px-3 py-1 text-xs font-semibold uppercase tracking-widest text-muted/60">
+          Recent
+        </p>
+
+        {loading ? (
+          <p className="px-3 text-xs text-muted/50">Loading...</p>
+        ) : recentSessions.length === 0 ? (
+          <p className="px-3 text-xs text-muted/50">No recent sessions.</p>
+        ) : (
+          recentSessions.map((session) => (
+            <button
+              key={session.id}
+              onClick={() => navigate(`/chat/${session.persona_key}/${session.id}`)}
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/5"
+            >
+              {/* Avatar */}
+              <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-accent2 to-accent">
+                {session.persona_avatar ? (
+                  <img src={getImageUrl(session.persona_avatar)} alt={session.persona_name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-950">
+                    {session.persona_name?.charAt(0)}
+                  </div>
+                )}
+              </div>
+
+              {/* Text */}
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-medium text-text">
+                    {session.persona_name}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted/50">
+                    {formatDate(session.updated_at)}
+                  </span>
+                </div>
+                <span className="truncate text-xs text-muted/60">
+                  {session.last_user_message ?? 'No messages yet'}
+                </span>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
 
       {/* Drag handle */}
       <div
@@ -97,8 +149,6 @@ function Sidebar({ activeView, onViewChange, onCreateClick }) {
       >
         <div className="absolute inset-0 bg-transparent group-hover:bg-accent/30 transition-colors duration-300"></div>
         <div className="absolute inset-y-0 -left-1 w-3 bg-transparent"></div>
-        
-        {/* Drag handle dots */}
         <div className="absolute top-1/2 -translate-y-1/2 right-[-2px] flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <div className="w-1 h-1 rounded-full bg-accent/60"></div>
           <div className="w-1 h-1 rounded-full bg-accent/60"></div>
