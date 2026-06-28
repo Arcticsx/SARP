@@ -129,16 +129,15 @@ function PersonalitySelector({ onPersonaSelected }) {
 
       <main className="flex flex-1 flex-col overflow-hidden px-6 pb-6 pt-0">
         <header className="flex flex-wrap items-center justify-between gap-4 py-5">
-          <div className=" group max-w-sm flex-1 flex items-center rounded-full border border-border/60 bg-surface/70 px-3 py-2 text-sm text-text transition focus-within:border-accent">
-            <span className="material-symbols-outlined ml-0.5 text-muted transition group-focus-within:text-accent">search</span>
+          <div className=" group max-w-xl flex-1 flex items-center rounded-full border border-border/60 bg-surface/70 px-3 text-sm text-text transition focus-within:border-accent">
             <input
               type="text"
-              placeholder="Search"
+              placeholder="Search personalities…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="w-full px-4 py-2.5 bg-transparent text-sm placeholder:text-muted text-muted outline-none transition focus:border-accent"
+              className="w-full px-4 py-2.5 bg-transparent text-sm text-text outline-none transition focus:border-accent"
             />
-            
+            <span className="material-symbols-outlined px-3 text-muted transition group-focus-within:text-accent">search</span>
           </div>
           <button
             className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5"
