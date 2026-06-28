@@ -84,7 +84,7 @@ export default function EditModal({ open, initialData, onSave, onCancel, saving 
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-300">System Prompt</label>
+            <label className="mb-1 block text-sm font-medium text-slate-300">Personality</label>
             <textarea
               className="min-h-[100px] w-full rounded-xl border border-border/60 bg-[#1a0a2e] px-3 py-2 text-sm text-white placeholder:text-muted outline-none transition focus:border-accent"
               value={form.system}
@@ -116,12 +116,24 @@ export default function EditModal({ open, initialData, onSave, onCancel, saving 
 
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-300">Avatar Image</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="mt-1 block w-full text-sm text-slate-300 file:mr-3 file:rounded-full file:border-0 file:bg-accent/15 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-300 file:hover:bg-accent/30"
-            />
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="absolute inset-0 cursor-pointer opacity-0"
+                id="avatar-upload"
+              />
+              <label
+                htmlFor="avatar-upload"
+                className="inline-flex w-full cursor-pointer items-center justify-center rounded-xl border border-border/60 bg-[#1a0a2e] px-4 py-2.5 text-sm text-slate-300 transition hover:border-accent hover:bg-[#2a1a3e]"
+              >
+                <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {form.avatar ? 'Change Image' : 'Choose Image'}
+              </label>
+            </div>
             {preview && (
               <div className="mt-3 overflow-hidden rounded-xl border border-border/60">
                 <img src={preview} alt="preview" className="h-24 w-24 object-cover" />
