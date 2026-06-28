@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { getImageUrl } from '../api';
-import './EditModal.css';
 
 export default function EditModal({ open, initialData, onSave, onCancel, saving }) {
   const [form, setForm] = useState({ name: '', description: '', system: '', scenario: '', opening_prompt: '', avatar: null });
@@ -15,9 +14,8 @@ export default function EditModal({ open, initialData, onSave, onCancel, saving 
         system: initialData.system || '',
         scenario: initialData.Scenario || '',
         opening_prompt: initialData.opening_prompt || '',
-        avatar: null // Don't store existing avatar as file object
+        avatar: null
       });
-      // Set preview to the backend URL for existing avatar
       setPreview(initialData.avatar ? getImageUrl(initialData.avatar) : '');
     } else {
       setForm({ name: '', description: '', system: '', scenario: '', opening_prompt: '', avatar: null });
@@ -40,11 +38,9 @@ export default function EditModal({ open, initialData, onSave, onCancel, saving 
   const handleFileChange = (e) => {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
-    
-    // Store the actual File object
+
     setForm((s) => ({ ...s, avatar: f }));
-    
-    // Create preview URL for display
+
     const reader = new FileReader();
     reader.onload = () => {
       setPreview(reader.result);
@@ -62,34 +58,46 @@ export default function EditModal({ open, initialData, onSave, onCancel, saving 
   };
 
   return (
-    <div className="edit-overlay">
-      <div className="edit-modal glass">
-        <h3>{initialData ? 'Edit Personality' : 'Create Personality'}</h3>
-        <form onSubmit={handleSubmit}>
-          <label>Name</label>
-          <input value={form.name} onChange={(e) => handleChange('name', e.target.value)} />
-          {errors.name && <div className="field-error">{errors.name}</div>}
+    <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-2xl rounded-3xl border border-border/60 bg-surface/90 p-6 shadow-2xl shadow-black/50 backdrop-blur-xl">
+        <h3 className="text-xl font-semibold text-text">{initialData ? 'Edit Personality' : 'Create Personality'}</h3>
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-emerald-200">Name</label>
+            <input className="w-full rounded-xl border border-border/60 bg-surface-2/70 px-3 py-2 text-sm text-text outline-none transition focus:border-accent" value={form.name} onChange={(e) => handleChange('name', e.target.value)} />
+            {errors.name && <div className="mt-1 text-sm text-rose-200">{errors.name}</div>}
+          </div>
 
-          <label>Description</label>
-          <textarea value={form.description} onChange={(e) => handleChange('description', e.target.value)} />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-emerald-200">Description</label>
+            <textarea className="min-h-[80px] w-full rounded-xl border border-border/60 bg-surface-2/70 px-3 py-2 text-sm text-text outline-none transition focus:border-accent" value={form.description} onChange={(e) => handleChange('description', e.target.value)} />
+          </div>
 
-          <label>System Prompt</label>
-          <textarea value={form.system} onChange={(e) => handleChange('system', e.target.value)} />
-          {errors.system && <div className="field-error">{errors.system}</div>}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-emerald-200">System Prompt</label>
+            <textarea className="min-h-[100px] w-full rounded-xl border border-border/60 bg-surface-2/70 px-3 py-2 text-sm text-text outline-none transition focus:border-accent" value={form.system} onChange={(e) => handleChange('system', e.target.value)} />
+            {errors.system && <div className="mt-1 text-sm text-rose-200">{errors.system}</div>}
+          </div>
 
-          <label>Base Prompt / Scenario</label>
-          <textarea value={form.scenario} onChange={(e) => handleChange('scenario', e.target.value)} />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-emerald-200">Base Prompt / Scenario</label>
+            <textarea className="min-h-[90px] w-full rounded-xl border border-border/60 bg-surface-2/70 px-3 py-2 text-sm text-text outline-none transition focus:border-accent" value={form.scenario} onChange={(e) => handleChange('scenario', e.target.value)} />
+          </div>
 
-          <label>Opening Prompt</label>
-          <textarea value={form.opening_prompt} onChange={(e) => handleChange('opening_prompt', e.target.value)} />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-emerald-200">Opening Prompt</label>
+            <textarea className="min-h-[90px] w-full rounded-xl border border-border/60 bg-surface-2/70 px-3 py-2 text-sm text-text outline-none transition focus:border-accent" value={form.opening_prompt} onChange={(e) => handleChange('opening_prompt', e.target.value)} />
+          </div>
 
-          <label>Avatar Image</label>
-          <input type="file" accept="image/*" onChange={handleFileChange} />
-          {preview && <div className="avatar-preview"><img src={preview} alt="preview" /></div>}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-emerald-200">Avatar Image</label>
+            <input type="file" accept="image/*" onChange={handleFileChange} className="mt-1 block w-full text-sm text-slate-300 file:mr-3 file:rounded-full file:border-0 file:bg-accent/15 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-emerald-200" />
+            {preview && <div className="mt-3 overflow-hidden rounded-xl border border-border/60"><img src={preview} alt="preview" className="h-24 w-24 object-cover" /></div>}
+          </div>
 
-          <div className="edit-buttons">
-            <button type="button" className="btn-cancel" onClick={onCancel} disabled={saving}>Cancel</button>
-            <button type="submit" className="btn-save" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" className="rounded-lg bg-white/10 px-3 py-2 text-sm text-slate-300 transition hover:bg-white/15" onClick={onCancel} disabled={saving}>Cancel</button>
+            <button type="submit" className="rounded-lg bg-gradient-to-r from-accent to-accent2 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5" disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
           </div>
         </form>
       </div>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { api, getImageUrl } from '../api';
 import ConfirmModal from './ConfirmModal.jsx';
 import EditModal from './EditModal.jsx';
-import './PersonalitySelector.css';
 import Sidebar from './Sidebar.jsx';
 
 function PersonalitySelector({ onPersonaSelected }) {
@@ -107,7 +106,6 @@ function PersonalitySelector({ onPersonaSelected }) {
     setModalInitialData(null);
   };
 
-  // Filter personalities based on search query
   const filteredList = Object.values(personalities).filter((p) => {
     const search = query.toLowerCase();
     return (
@@ -117,13 +115,8 @@ function PersonalitySelector({ onPersonaSelected }) {
     );
   });
 
-  // For "Featured" we can show first 4, "For you" rest, or just show all in one grid
-  // We'll just show all in a single grid with a "Discover" heading
-  const personalityList = filteredList;
-
   return (
-    <div className="ca-layout">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-bg text-text">
       <Sidebar
         activeView={activeView}
         onViewChange={setActiveView}
@@ -131,93 +124,97 @@ function PersonalitySelector({ onPersonaSelected }) {
           setEditingPersonaKey(null);
           setModalInitialData(null);
           setEditModalOpen(true);
-        }}/>
+        }}
+      />
 
-      {/* Main content */}
-      <main className="ca-main">
-        {/* Top bar */}
-        <header className="ca-topbar">
-          <div className="ca-search">
+      <main className="flex flex-1 flex-col overflow-hidden px-6 pb-6 pt-0">
+        <header className="flex flex-wrap items-center justify-between gap-4 py-5">
+          <div className=" group max-w-xl flex-1 flex items-center rounded-full border border-border/60 bg-surface/70 px-3 text-sm text-text transition focus-within:border-accent">
             <input
               type="text"
               placeholder="Search personalities…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              className="w-full px-4 py-2.5 bg-transparent text-sm text-text outline-none transition focus:border-accent"
             />
+            <span className="material-symbols-outlined px-3 text-muted transition group-focus-within:text-accent">search</span>
           </div>
-          <div className="ca-top-actions">
-            <button
-              className="btn-create"
-              onClick={() => {
-                setEditingPersonaKey(null);
-                setModalInitialData(null);
-                setEditModalOpen(true);
-              }}
-            >
-              + Create New
-            </button>
-          </div>
+          <button
+            className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5"
+            onClick={() => {
+              setEditingPersonaKey(null);
+              setModalInitialData(null);
+              setEditModalOpen(true);
+            }}
+          >
+            + Create New
+          </button>
         </header>
 
-        {/* Error / Toast */}
-        {error && <div className="ca-error">{error}</div>}
-        {toast && <div className="ca-toast">{toast}</div>}
+        {error && <div className="mb-3 rounded-xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</div>}
+        {toast && <div className="mb-3 rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">{toast}</div>}
 
-        {/* Content */}
-        <section className="ca-content">
+        <section className="flex-1 overflow-y-auto pr-1">
           {loading ? (
-            <div className="ca-loading">Loading personalities…</div>
-          ) : personalityList.length === 0 ? (
-            <div className="ca-empty">
+            <div className="py-20 text-center text-muted">Loading personalities…</div>
+          ) : filteredList.length === 0 ? (
+            <div className="rounded-2xl border border-border/60 bg-white/5 px-6 py-16 text-center text-muted">
               <p>No personalities found. Create one to get started.</p>
             </div>
           ) : (
-            <>
-              <div className="ca-section">
-                <h2 className="ca-section-title">Discover</h2>
-                <div className="ca-grid">
-                  {personalityList.map((persona) => (
+            <div className="space-y-4">
+              <div>
+                <h2 className="mb-4 text-lg font-semibold text-accent">Discover</h2>
+                <div className="flex gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {filteredList.map((persona) => (
                     <div
                       key={persona.key}
-                      className="ca-card"
+                      className="group relative flex justify-center items-center cursor-pointer gap-4 rounded-2xl border border-border/60 bg-surface/70 p-4 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-accent/40"
                       onClick={() => handlePersonaClick(persona)}
                     >
-                      <div className="card-avatar">
+                      {/* Square avatar */}
+                      <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-accent2 to-accent">
                         {persona.avatar ? (
-                          <img src={getImageUrl(persona.avatar)} alt={persona.name} />
+                          <img src={getImageUrl(persona.avatar)} alt={persona.name} className="h-full w-full object-cover" />
                         ) : (
-                          <span>{persona.name.charAt(0)}</span>
+                          <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-950">
+                            {persona.name.charAt(0)}
+                          </div>
                         )}
                       </div>
-                      <div className="card-body">
-                        <h3 className="card-name">{persona.name}</h3>
-                        <p className="card-creator">by @user_{persona.key}</p>
-                        <p className="card-description">{persona.description || 'No description'}</p>
-                        <div className="card-stats">
-                          <span>💬 0 sessions</span>
+
+                      {/* Info */}
+                      <div className="flex flex-1 flex-col justify-between mt-2">
+                        <div>
+                          <h3 className="text-base font-semibold text-text">{persona.name}</h3>
+                          <p className="text-xs text-muted">by @user_{persona.key}</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-300 line-clamp-2">{persona.description || 'No description'}</p>
                         </div>
-                      </div>
-                      <div className="card-actions">
-                        <button
-                          className="btn-edit"
-                          onClick={(e) => handleEditPersona(e, persona)}
-                          title="Edit"
-                        >
-                          ✎
-                        </button>
-                        <button
-                          className="btn-delete"
-                          onClick={(e) => handleDeletePersona(e, persona)}
-                          title="Delete"
-                        >
-                          🗑
-                        </button>
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-muted">💬 0 sessions</div>
+                          <div className="flex gap-2 opacity-0 transition group-hover:opacity-100">
+                            <button
+                              className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-emerald-500/15 hover:text-emerald-200"
+                              onClick={(e) => handleEditPersona(e, persona)}
+                              title="Edit"
+                            >
+                              <span className="material-symbols-outlined text-base">edit</span>
+                            </button>
+                            <button
+                              className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-rose-500/15 hover:text-rose-200"
+                              onClick={(e) => handleDeletePersona(e, persona)}
+                              title="Delete"
+                            >
+                              <span className="material-symbols-outlined text-base">delete</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            </>
+            </div>
           )}
         </section>
       </main>

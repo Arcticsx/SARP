@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-ro
 import PersonalitySelector from './components/PersonalitySelector.jsx';
 import SessionSelector from './components/SessionSelector.jsx';
 import Chat from './components/Chat.jsx';
-import './App.css';
+import Sidebar from './components/Sidebar';
 
 function AppContent() {
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ function AppContent() {
   const routeSession = selectedSession || location.state?.session;
 
   return (
-    <div className="app">
+    <div className="min-h-screen bg-bg text-text">
       <Routes>
         <Route
           path="/"
@@ -61,11 +61,20 @@ function AppContent() {
         <Route
           path="/chat/:personaKey/:sessionId?"
           element={
-            <Chat
-              persona={routePersona}
-              session={routeSession}
-              onBack={handleBackToSessions}
+            <div className="flex h-screen">
+            <Sidebar
+              activeView="discover"
+              onViewChange={() => {}}
+              onCreateClick={handleBackToPersonalities}
             />
+            <main className="flex-1 overflow-hidden">
+              <Chat
+                persona={routePersona}
+                session={routeSession}
+                onBack={handleBackToSessions}
+              />
+            </main>
+          </div>
           }
         />
       </Routes>
