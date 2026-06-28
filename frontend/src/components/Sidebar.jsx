@@ -54,19 +54,19 @@ function Sidebar({ activeView, onViewChange, onCreateClick }) {
       style={{ width: `${width}px` }}
       className="relative flex shrink-0 flex-col border-r border-border/70 bg-surface/80 px-0 py-5 backdrop-blur-xl"
     >
-      {/* SARP logo */}
+      {/* Simplified logo */}
       <div 
         onClick={() => navigate('/')}
-        className="group relative px-10 pb-6 text-center cursor-pointer transition-all duration-300 hover:scale-105"
+        className="px-6 pb-6 cursor-pointer transition-opacity duration-300 hover:opacity-70"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && navigate('/')}
       >
-        <div className="absolute inset-0 -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute inset-0 bg-accent/20 blur-2xl rounded-full"></div>
-        </div>
-        <div className="relative inline-block">
-          <span className="text-2xl font-bold tracking-tight text-text/90 hover:text-text transition-colors duration-300">
-            fane.
+        <div className="flex items-baseline">
+          <span className="text-2xl font-light tracking-[0.15em] text-text/80">
+            fane
           </span>
-          <span className="absolute -bottom-1 -right-1 h-2 w-12 bg-accent rounded-full animate-pulse"></span>
+          <span className="text-2xl font-light text-accent ml-0.5">.</span>
         </div>
       </div>
 

@@ -191,7 +191,6 @@ function PersonalitySelector({ onPersonaSelected }) {
                           <p className="mt-2 text-sm leading-6 text-slate-300 line-clamp-2">{persona.description || 'No description'}</p>
                         </div>
                         <div className="flex items-center justify-between">
-                          <div className="text-xs text-muted">💬 0 sessions</div>
                           <div className="flex gap-2 opacity-0 transition group-hover:opacity-100">
                             <button
                               className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-emerald-500/15 hover:text-emerald-200"
