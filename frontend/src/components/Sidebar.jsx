@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getImageUrl } from '../api';
 
 function Sidebar({ activeView, onViewChange, onCreateClick }) {
   const [width, setWidth] = useState(224);
@@ -35,7 +36,7 @@ function Sidebar({ activeView, onViewChange, onCreateClick }) {
       style={{ width: `${width}px` }}
       className="relative flex shrink-0 flex-col border-r border-border/70 bg-surface/80 px-0 py-5 backdrop-blur-xl"
     >
-      {/* SARP logo*/}
+      {/* SARP logo */}
       <div 
         onClick={() => navigate('/')}
         className="group relative px-10 pb-6 text-center cursor-pointer transition-all duration-300 hover:scale-105"
@@ -52,7 +53,6 @@ function Sidebar({ activeView, onViewChange, onCreateClick }) {
           
           {/* dot */}
           <span className="absolute -bottom-1 -right-1 h-2 w-12 bg-accent rounded-full animate-pulse"></span>
-          
         </div>
       </div>
 
@@ -90,7 +90,7 @@ function Sidebar({ activeView, onViewChange, onCreateClick }) {
         })}
       </nav>
 
-      {/* Drag handle*/}
+      {/* Drag handle */}
       <div
         onMouseDown={handleMouseDown}
         className="absolute right-0 top-0 h-full w-1 cursor-col-resize group"
