@@ -8,6 +8,8 @@ A CLI application for immersive roleplay conversations with AI-powered character
 ![REACT](https://img.shields.io/badge/-ReactJs-61DAFB?logo=react&logoColor=white&style=for-the-badge)
 ![JAVASCRIPT](https://shields.io/badge/JavaScript-F7DF1E?logo=JavaScript&logoColor=000&style=flat-square)
 
+### **Tools**
+[![Ollama](https://img.shields.io/badge/Ollama-fff?logo=ollama&logoColor=000)](#)
 ## Features
 
 - **Multiple AI Providers**: Works with OpenAI, Anthropic Claude, Deepseek and local Ollama models
