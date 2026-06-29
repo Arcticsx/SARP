@@ -108,14 +108,15 @@ function Sidebar({ activeView, onViewChange, onCreateClick }) {
       ),
     },
     {
-      key: 'feed',
-      label: 'Feed',
+      key: 'Chronicle',
+      label: 'Chronicle',
       icon: (
         <span className="material-symbols-outlined">
-          rss_feed
+          cruelty_free
         </span>
       ),
     },
+    
   ];
 
   return (

@@ -193,9 +193,6 @@ function PersonalitySelector({ onPersonaSelected }) {
                           <h3 className="text-base font-semibold text-text">
                             {persona.name}
                           </h3>
-                          <p className="text-xs text-muted">
-                            by @user_{persona.key}
-                          </p>
                           <p className="mt-1 text-sm text-slate-300 line-clamp-2">
                       {persona.description || "No description"}
                     </p>
