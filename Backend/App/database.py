@@ -28,30 +28,16 @@ def init_db():
     with get_db() as conn:
         cursor = conn.cursor()
 
-        # Create sessions table with both persona (old) and persona_key (new)
+        # Create sessions table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                persona TEXT NOT NULL,               -- kept for compatibility
-                persona_key TEXT NOT NULL,           -- new column
+                persona_key TEXT NOT NULL,
                 persona_id TEXT,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
         """)
-
-        # For existing databases that might lack persona_key
-        cursor.execute("PRAGMA table_info(sessions)")
-        columns = [row[1] for row in cursor.fetchall()]
-
-        if 'persona_key' not in columns:
-            cursor.execute("ALTER TABLE sessions ADD COLUMN persona_key TEXT")
-            # Copy data from old 'persona' to 'persona_key'
-            if 'persona' in columns:
-                cursor.execute("UPDATE sessions SET persona_key = persona")
-            else:
-                # If 'persona' doesn't exist, we need to set a default – unlikely.
-                pass
 
         # Create messages and context tables (unchanged)
         cursor.execute("""
@@ -177,18 +163,16 @@ def save_session(conn, persona_key, messages=None, context=None, session_id=None
     now = datetime.now().isoformat()
 
     if session_id:
-        # Update both persona and persona_key to keep old column satisfied
         cursor.execute(
-            "UPDATE sessions SET persona=?, persona_key=?, updated_at=? WHERE id=?",
-            (persona_key, persona_key, now, session_id)
+            "UPDATE sessions SET persona_key=?, updated_at=? WHERE id=?",
+            (persona_key, now, session_id)
         )
         cursor.execute("DELETE FROM messages WHERE session_id = ?", (session_id,))
         cursor.execute("DELETE FROM context WHERE session_id = ?", (session_id,))
     else:
-        # Insert both persona and persona_key
         cursor.execute(
-            "INSERT INTO sessions(persona, persona_key, created_at, updated_at) VALUES (?, ?, ?, ?)",
-            (persona_key, persona_key, now, now)
+            "INSERT INTO sessions(persona_key, created_at, updated_at) VALUES (?, ?, ?)",
+            (persona_key, now, now)
         )
         session_id = cursor.lastrowid
 

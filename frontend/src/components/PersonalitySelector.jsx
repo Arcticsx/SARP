@@ -169,13 +169,17 @@ function PersonalitySelector({ onPersonaSelected }) {
                   {filteredList.map((persona) => (
                     <div
                       key={persona.key}
-                      className="group relative flex justify-center items-center cursor-pointer gap-4 rounded-2xl border border-border/60 bg-surface/70 p-4 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-accent/40"
+                      className="group relative flex items-center gap-4 w-[15%] cursor-pointer rounded-2xl border border-border/60 bg-surface/70 p-4 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-accent/40"
                       onClick={() => handlePersonaClick(persona)}
                     >
                       {/* Square avatar */}
                       <div className="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-accent2 to-accent">
                         {persona.avatar ? (
-                          <img src={getImageUrl(persona.avatar)} alt={persona.name} className="h-full w-full object-cover" />
+                          <img
+                            src={getImageUrl(persona.avatar)}
+                            alt={persona.name}
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-2xl font-semibold text-slate-950">
                             {persona.name.charAt(0)}
@@ -184,27 +188,39 @@ function PersonalitySelector({ onPersonaSelected }) {
                       </div>
 
                       {/* Info */}
-                      <div className="flex flex-1 flex-col justify-between mt-2">
+                      <div className="flex h-24 flex-1 flex-col justify-between">
                         <div>
-                          <h3 className="text-base font-semibold text-text">{persona.name}</h3>
-                          <p className="text-xs text-muted">by @user_{persona.key}</p>
-                          <p className="mt-2 text-sm leading-6 text-slate-300 line-clamp-2">{persona.description || 'No description'}</p>
+                          <h3 className="text-base font-semibold text-text">
+                            {persona.name}
+                          </h3>
+                          <p className="text-xs text-muted">
+                            by @user_{persona.key}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-300 line-clamp-2">
+                      {persona.description || "No description"}
+                    </p>
                         </div>
-                        <div className="flex items-center justify-between">
+
+                        <div className="flex justify-between">
                           <div className="flex gap-2 opacity-0 transition group-hover:opacity-100">
                             <button
                               className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-emerald-500/15 hover:text-emerald-200"
                               onClick={(e) => handleEditPersona(e, persona)}
                               title="Edit"
                             >
-                              <span className="material-symbols-outlined text-base">edit</span>
+                              <span className="material-symbols-outlined text-base">
+                                edit
+                              </span>
                             </button>
+
                             <button
                               className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-rose-500/15 hover:text-rose-200"
                               onClick={(e) => handleDeletePersona(e, persona)}
                               title="Delete"
                             >
-                              <span className="material-symbols-outlined text-base">delete</span>
+                              <span className="material-symbols-outlined text-base">
+                                delete
+                              </span>
                             </button>
                           </div>
                         </div>

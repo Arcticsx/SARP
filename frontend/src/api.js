@@ -22,7 +22,9 @@ async function handleResponse(res) {
   }
 
   if (!res.ok) {
-    const message = payload?.detail || payload?.message || text || res.statusText;
+    const message = Array.isArray(payload?.detail)
+      ? payload.detail.map(e => `${e.loc?.join('.')} — ${e.msg}`).join(', ')
+      : payload?.detail || payload?.message || text || res.statusText;
     throw new Error(message || 'Request failed');
   }
 
@@ -117,9 +119,9 @@ export const api = {
     const res = await fetch(`${API_BASE}/sessions/load`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         persona_key: personaKey,
-        session 
+        session: session ? session : null
       })
     });
     return handleResponse(res);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { api, getImageUrl } from '../api';
+import { api } from '../api';
 
 function SessionSelector({ persona, onSessionSelected, onBack }) {
   const { personaKey } = useParams();
@@ -75,35 +75,7 @@ function SessionSelector({ persona, onSessionSelected, onBack }) {
   };
 
   return (
-    <div className="flex h-screen bg-bg text-text">
-      <aside className="w-56 shrink-0 border-r border-border/70 bg-surface/80 p-5 backdrop-blur-xl flex flex-col">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-accent2 to-accent text-lg font-semibold text-slate-950">
-            {persona.avatar ? (
-              <img src={getImageUrl(persona.avatar)} alt={persona.name} className="h-full w-full object-cover" />
-            ) : (
-              <span>{persona.name.charAt(0)}</span>
-            )}
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-text">{persona.name}</h3>
-            <p className="text-xs text-muted">#{persona.key}</p>
-          </div>
-        </div>
-        <button
-          className="mb-4 flex items-center gap-2 rounded-xl border border-border/60 bg-white/5 px-3 py-2 text-left text-sm text-muted transition hover:text-white"
-          onClick={onBack}
-        >
-          <span className="material-symbols-outlined text-base">keyboard_backspace</span>
-          Back to personalities
-        </button>
-        <div className="mt-auto rounded-xl border border-border/60 bg-white/5 px-3 py-3 text-sm text-muted text-center">
-          <span className="material-symbols-outlined text-base align-middle mr-1">chat</span>
-          {sessions.length} sessions
-        </div>
-      </aside>
-
-      <main className="flex flex-1 flex-col overflow-hidden px-6 py-6">
+    <div className="flex flex-1 flex-col overflow-hidden px-6 py-6 bg-bg text-text">
         <header className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-semibold text-text">
             Your Sessions
@@ -196,7 +168,6 @@ function SessionSelector({ persona, onSessionSelected, onBack }) {
             </div>
           ))}
         </div>
-      </main>
     </div>
   );
 }

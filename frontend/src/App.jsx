@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import PersonalitySelector from './components/PersonalitySelector.jsx';
 import SessionSelector from './components/SessionSelector.jsx';
@@ -8,23 +8,23 @@ import Sidebar from './components/Sidebar';
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [selectedPersona, setSelectedPersona] = useState(location.state?.persona || null);
-  const [selectedSession, setSelectedSession] = useState(location.state?.session || null);
+  // Derive persona and session directly from location — single source of truth
+  const routePersona = location.state?.persona || null;
+  const routeSession = location.state?.session || null;
+  // Keep a mutable ref for use in callbacks without stale closures
+  const personaRef = React.useRef(routePersona);
+  personaRef.current = routePersona;
 
   const handlePersonaSelected = (persona) => {
-    setSelectedPersona(persona);
-    setSelectedSession(null);
     navigate(`/sessions/${encodeURIComponent(persona.key)}`, { state: { persona } });
   };
 
   const handleSessionSelected = (session) => {
-    const persona = selectedPersona || routePersona || location.state?.persona;
+    const persona = personaRef.current;
     if (!persona?.key) {
       console.error('No persona selected for session navigation');
       return;
     }
-
-    setSelectedSession(session);
     const targetPath = session
       ? `/chat/${encodeURIComponent(persona.key)}/${session.id}`
       : `/chat/${encodeURIComponent(persona.key)}`;
@@ -32,20 +32,14 @@ function AppContent() {
   };
 
   const handleBackToPersonalities = () => {
-    setSelectedPersona(null);
-    setSelectedSession(null);
     navigate('/');
   };
 
   const handleBackToSessions = () => {
-    const persona = selectedPersona || routePersona || location.state?.persona;
+    const persona = personaRef.current;
     if (!persona?.key) return;
-    setSelectedSession(null);
     navigate(`/sessions/${encodeURIComponent(persona.key)}`, { state: { persona } });
   };
-
-  const routePersona = selectedPersona || location.state?.persona;
-  const routeSession = selectedSession || location.state?.session;
 
   return (
     <div className="min-h-screen bg-bg text-text">
@@ -57,11 +51,20 @@ function AppContent() {
         <Route
           path="/sessions/:personaKey"
           element={
-            <SessionSelector
-              persona={routePersona}
-              onSessionSelected={handleSessionSelected}
-              onBack={handleBackToPersonalities}
-            />
+            <div className="flex h-screen">
+              <Sidebar
+                activeView="create"
+                onViewChange={() => {}}
+                onCreateClick={handleBackToPersonalities}
+              />
+              <main className="flex-1 overflow-hidden">
+                <SessionSelector
+                  persona={routePersona}
+                  onSessionSelected={handleSessionSelected}
+                  onBack={handleBackToPersonalities}
+                />
+              </main>
+            </div>
           }
         />
         <Route

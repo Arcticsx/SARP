@@ -4,7 +4,8 @@ import { api } from '../api';
 import { ArrowUpIcon } from 'lucide-react';
 
 function Chat({ persona, session, onBack }) {
-  const { personaKey, sessionId: routeSessionId } = useParams();
+  const { sessionId: routeSessionId } = useParams();
+
   const [messages, setMessages] = useState([]);
   const [context, setContext] = useState([]);
   const [sessionId, setSessionId] = useState(session?.id || routeSessionId || null);
@@ -14,42 +15,42 @@ function Chat({ persona, session, onBack }) {
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
+  // Derive the active session from props — single source of truth
+  const activeSession = session || (routeSessionId ? { id: parseInt(routeSessionId), persona_key: persona?.key } : null);
+  const activeSessionId = activeSession?.id ?? null;
+
+  // Re-initialize whenever the active session identity changes
   useEffect(() => {
-    setSessionId(session?.id || routeSessionId || null);
-  }, [session?.id, routeSessionId]);
-
-  useEffect(() => {
-    if (persona?.key) {
-        initializeChat();
-    }
-  }, []); 
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const initializeChat = async () => {
     if (!persona?.key) return;
-    const activeSession = session || (routeSessionId ? { id: parseInt(routeSessionId) } : null);
+
+    let cancelled = false;
     setInitializing(true);
     setMessages([]);
     setContext([]);
-    try {
-        const data = await api.loadSession(persona.key, activeSession);
-        console.log("loadSession response:", data);
+
+    api.loadSession(persona.key, activeSession)
+      .then(data => {
+        if (cancelled) return;
         setMessages(data.messages || []);
         setContext(data.context || []);
-        setSessionId(activeSession?.id || null);
-    } catch (error) {
+        setSessionId(activeSession?.id ?? null);
+      })
+      .catch(error => {
+        if (cancelled) return;
         console.error('Failed to load session:', error);
         alert('Failed to load chat session');
-    }
-    setInitializing(false);
-  };
+      })
+      .finally(() => {
+        if (!cancelled) setInitializing(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [persona?.key, activeSessionId]); // only thing that identifies a session is its id + persona
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
@@ -143,9 +144,6 @@ function Chat({ persona, session, onBack }) {
 
       <div className="mx-auto flex h-full max-w-5xl flex-col px-4 py-4 sm:px-6 lg:px-8">
         <div className="mb-4 flex items-center gap-3 rounded-2xl border border-border/60 bg-surface/70 px-4 py-3 shadow-lg shadow-black/20">
-          <button className="rounded-full border border-border/60 bg-white/5 px-3 py-1.5 text-sm text-muted transition hover:bg-white/10 hover:text-white" onClick={onBack}>
-            ← Back
-          </button>
           <div className="flex-1">
             <div className="text-base font-semibold text-text">{persona.name}</div>
             <div className="text-sm text-muted">Session #{sessionId || 'New'}</div>

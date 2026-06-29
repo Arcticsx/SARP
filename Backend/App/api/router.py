@@ -203,9 +203,9 @@ def pick_session_endpoint(body: PickSessionRequest, conn: sqlite3.Connection = D
 
 class SessionData(BaseModel):
     id: int
-    persona_key: str
-    created_at: str
-    updated_at: str
+    persona_key: str | None = None
+    created_at: str | None = None
+    updated_at: str | None = None
 
 class LoadSessionRequest(BaseModel):
     persona_key: str | None = None
