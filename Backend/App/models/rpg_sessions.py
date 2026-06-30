@@ -1,7 +1,5 @@
-
 import uuid
 from datetime import datetime, timezone
-
 from sqlalchemy import (
     Column,
     String,
@@ -21,47 +19,18 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 class RpgSession(Base):
-    """
-    A single Chronicle (story/campaign). Deliberately separate from your
-    existing chat session table -- Chronicle sessions carry world/lore
-    state that regular chat sessions don't need.
-    """
-
     __tablename__ = "rpg_sessions"
 
     id = Column(String, primary_key=True, default=_uuid)
-
     title = Column(String, nullable=False)
     synopsis = Column(Text, nullable=True)
-
-    # Free-text genre tag (e.g. "high fantasy", "noir mystery") -- used
-    # when assembling the system prompt tone, not enforced as an enum
-    # so it stays flexible for whatever the source PDF turns out to be.
     genre = Column(String, nullable=True)
-
-    # Slug-style key for the world this session belongs to, in case you
-    # later support multiple sessions sharing one world/lore set.
     world_key = Column(String, nullable=True, index=True)
-
-    # Pinned, immutable magic rules extracted from the source PDF.
-    # This block goes straight into the system prompt and should never
-    # be silently truncated by the context builder's token budget logic.
     magic_rules_md = Column(Text, nullable=True)
-
-    # Tracks which chapter is currently being played, so resuming a
-    # session doesn't require scanning all chapters to find the active one.
     active_chapter_number = Column(Integer, nullable=False, default=1)
-
-    # Running total -- cheap to maintain incrementally, useful for UI
-    # ("120,000 words written") without summing chapters every request.
     word_count_total = Column(Integer, nullable=False, default=0)
-
-    # Per-session context window override (see context_builder.py).
-    # Defaults to None, meaning "use the global default for the active model".
     context_token_limit = Column(Integer, nullable=True)
-
     is_archived = Column(Boolean, nullable=False, default=False)
-
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at = Column(
         DateTime(timezone=True), default=_now, onupdate=_now, nullable=False
@@ -74,24 +43,11 @@ class RpgSession(Base):
         order_by="ChronicleChapter.number",
     )
 
-    # These are defined in their own model files (character.py, lore.py)
-    # but declared here too via back_populates once those files exist:
-    # characters = relationship("Character", back_populates="session", cascade="all, delete-orphan")
-    # lore_entries = relationship("LoreEntry", back_populates="session", cascade="all, delete-orphan")
-    # story_beats = relationship("StoryBeat", back_populates="session", cascade="all, delete-orphan")
-
     def __repr__(self) -> str:
         return f"<RpgSession id={self.id!r} title={self.title!r}>"
 
 
 class ChronicleChapter(Base):
-    """
-    One chapter within a Chronicle. Chapters are the unit the context
-    builder uses for the "rolling summary" -- when a chapter closes,
-    a background task (services/summarizer.py) generates `summary` and
-    that gets prepended into future turns instead of replaying the raw
-    messages from that chapter.
-    """
 
     __tablename__ = "chronicle_chapters"
 
@@ -99,29 +55,13 @@ class ChronicleChapter(Base):
     session_id = Column(
         String, ForeignKey("rpg_sessions.id", ondelete="CASCADE"), nullable=False
     )
-
     number = Column(Integer, nullable=False)
-
-    # LLM-generated summary (~300 tokens), populated once the chapter closes.
-    # Null while the chapter is still active/being played.
     summary = Column(Text, nullable=True)
-
-    # Raw turn-by-turn messages for this chapter, stored as JSON text.
-    # Kept as a single JSON blob rather than a separate Message table for
-    # now -- simplest option while the schema is still settling. Revisit
-    # if you need to query into individual messages later.
     messages_json = Column(Text, nullable=False, default="[]")
-
-    # Token count of messages_json at last write -- lets the turn handler
-    # decide whether to close this chapter and start a new one without
-    # re-tokenizing the whole blob every turn.
     token_count = Column(Integer, nullable=False, default=0)
-
     is_closed = Column(Boolean, nullable=False, default=False)
-
     created_at = Column(DateTime(timezone=True), default=_now, nullable=False)
     closed_at = Column(DateTime(timezone=True), nullable=True)
-
     session = relationship("RpgSession", back_populates="chapters")
 
     def __repr__(self) -> str:
@@ -129,3 +69,127 @@ class ChronicleChapter(Base):
             f"<ChronicleChapter id={self.id!r} session_id={self.session_id!r} "
             f"number={self.number} closed={self.is_closed}>"
         )
+
+
+class Character(Base):
+    __tablename__ = "character"
+
+    id = Column(String, primary_key=True)
+    session_id = Column(String, ForeignKey("rpg_session.id"))
+    name = Column(String)
+    role = Column(String)
+    personality_md = Column(Text)
+    backstory_md = Column(Text)
+    secret = Column(Text)
+
+    session = relationship("RPGSession", back_populates="characters")
+    relations_as_a = relationship(
+        "CharacterRelation",
+        foreign_keys="CharacterRelation.char_a_id",
+        back_populates="char_a"
+    )
+    relations_as_b = relationship(
+        "CharacterRelation",
+        foreign_keys="CharacterRelation.char_b_id",
+        back_populates="char_b"
+    )
+
+
+class CharacterRelation(Base):
+    __tablename__ = "character_relation"
+
+    char_a_id = Column(String, ForeignKey("character.id"), primary_key=True)
+    char_b_id = Column(String, ForeignKey("character.id"), primary_key=True)
+    relation_type = Column(String)
+    notes = Column(Text)
+
+    char_a = relationship("Character", foreign_keys=[char_a_id], back_populates="relations_as_a")
+    char_b = relationship("Character", foreign_keys=[char_b_id], back_populates="relations_as_b")
+
+
+class LoreEntry(Base):
+    __tablename__ = "lore_entry"
+
+    id = Column(String, primary_key=True)
+    session_id = Column(String, ForeignKey("rpg_session.id"))
+    category = Column(String)
+    title = Column(String)
+    body_md = Column(Text)
+    pinned = Column(Boolean)
+    embedding_id = Column(String, ForeignKey("chroma_lore_collection.lore_id"))
+
+    session = relationship("RPGSession", back_populates="lore_entries")
+    embedding = relationship("ChromaLoreCollection", back_populates="lore_entry", uselist=False)
+
+
+class StoryBeat(Base):
+    __tablename__ = "story_beat"
+
+    id = Column(String, primary_key=True)
+    session_id = Column(String, ForeignKey("rpg_session.id"))
+    description = Column(Text)
+    triggered = Column(Boolean)
+    order = Column(Integer)   # 'order' is a reserved word in SQL, but quoted in models
+
+    session = relationship("RPGSession", back_populates="story_beats")
+
+
+class StoryEvent(Base):
+    __tablename__ = "story_event"
+
+    id = Column(String, primary_key=True)
+    session_id = Column(String, ForeignKey("rpg_session.id"))
+    chapter = Column(Integer)          # chapter number, not a FK
+    description = Column(Text)
+    significance = Column(String)
+
+    session = relationship("RPGSession", back_populates="story_events")
+
+
+class SourceDocument(Base):
+    __tablename__ = "source_document"
+
+    id = Column(String, primary_key=True)
+    session_id = Column(String, ForeignKey("rpg_session.id"))
+    filename = Column(String)
+    status = Column(String)
+    chunk_count = Column(Integer)
+
+    session = relationship("RPGSession", back_populates="source_documents")
+
+
+class TurnLog(Base):
+    __tablename__ = "turn_log"
+
+    id = Column(String, primary_key=True)
+    chapter_id = Column(String, ForeignKey("chronicle_chapter.id"))
+    player_action = Column(Text)
+    dice_roll = Column(Integer)
+    outcome = Column(String)
+    narrative = Column(Text)
+
+    chapter = relationship("ChronicleChapter", back_populates="turns")
+
+
+class ChromaDocsCollection(Base):
+    __tablename__ = "chroma_docs_collection"
+
+    chunk_id = Column(String, primary_key=True)
+    session_id = Column(String, ForeignKey("rpg_session.id"))
+    embedding = Column(String)          # custom vector type (JSON or dedicated)
+    chunk_text = Column(Text)
+    source_page = Column(Integer)
+
+    session = relationship("RPGSession", back_populates="chroma_docs")
+
+
+class ChromaLoreCollection(Base):
+    __tablename__ = "chroma_lore_collection"
+
+    lore_id = Column(String, primary_key=True)   # this is also the FK from LoreEntry
+    session_id = Column(String, ForeignKey("rpg_session.id"))
+    embedding = Column(String)          # custom vector type (JSON or dedicated)
+    source_text = Column(Text)
+
+    session = relationship("RPGSession", back_populates="chroma_lore")
+    lore_entry = relationship("LoreEntry", back_populates="embedding", uselist=False)
