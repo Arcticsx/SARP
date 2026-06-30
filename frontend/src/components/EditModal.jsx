@@ -2,23 +2,39 @@ import React, { useState, useEffect } from 'react';
 import { getImageUrl } from '../api';
 
 export default function EditModal({ open, initialData, onSave, onCancel, saving }) {
-  const [form, setForm] = useState({ name: '', description: '', system: '', scenario: '', opening_prompt: '', avatar: null });
+  const [form, setForm] = useState({
+    name: '',
+    description: '',
+    system: '',
+    scenario: '',
+    opening_prompt: '',
+    avatar: null
+  });
   const [errors, setErrors] = useState({});
   const [preview, setPreview] = useState('');
 
   useEffect(() => {
     if (initialData) {
+      // Handle both possible keys: "scenario" or "Scenario"
+      const scenarioValue = initialData.scenario ?? initialData.Scenario ?? '';
       setForm({
         name: initialData.name || '',
         description: initialData.description || '',
         system: initialData.system || '',
-        scenario: initialData.Scenario || '',
+        scenario: scenarioValue,
         opening_prompt: initialData.opening_prompt || '',
         avatar: null
       });
       setPreview(initialData.avatar ? getImageUrl(initialData.avatar) : '');
     } else {
-      setForm({ name: '', description: '', system: '', scenario: '', opening_prompt: '', avatar: null });
+      setForm({
+        name: '',
+        description: '',
+        system: '',
+        scenario: '',
+        opening_prompt: '',
+        avatar: null
+      });
       setPreview('');
     }
     setErrors({});
@@ -53,15 +69,27 @@ export default function EditModal({ open, initialData, onSave, onCancel, saving 
     const eobj = validate();
     setErrors(eobj);
     if (Object.keys(eobj).length === 0) {
-      onSave(form);
+      // Ensure scenario is always a string (even empty) to satisfy backend
+      const payload = {
+        ...form,
+        scenario: form.scenario ?? ''
+      };
+      onSave(payload);
     }
   };
 
   return (
     <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-2xl rounded-3xl border border-border/60 bg-surface/90 p-6 shadow-2xl shadow-black/50 backdrop-blur-xl">
-        <h3 className="text-xl font-semibold text-text">{initialData ? 'Edit Personality' : 'Create Personality'}</h3>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+      <div className="w-full max-w-2xl max-h-[90vh] rounded-3xl border border-border/60 bg-surface/90 shadow-2xl shadow-black/50 backdrop-blur-xl flex flex-col">
+        {/* Fixed header */}
+        <div className="flex-shrink-0 px-6 pt-6 pb-2">
+          <h3 className="text-xl font-semibold text-text">
+            {initialData ? 'Edit Personality' : 'Create Personality'}
+          </h3>
+        </div>
+
+        {/* Scrollable form body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-300">Name</label>
             <input
@@ -140,25 +168,27 @@ export default function EditModal({ open, initialData, onSave, onCancel, saving 
               </div>
             )}
           </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              className="rounded-lg bg-white/10 px-3 py-2 text-sm text-slate-300 transition hover:bg-white/15"
-              onClick={onCancel}
-              disabled={saving}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-gradient-to-r from-accent to-accent2 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5"
-              disabled={saving}
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-          </div>
         </form>
+
+        {/* Fixed footer */}
+        <div className="flex-shrink-0 px-6 pb-6 pt-2 flex justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-lg bg-white/10 px-3 py-2 text-sm text-slate-300 transition hover:bg-white/15"
+            onClick={onCancel}
+            disabled={saving}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="rounded-lg bg-gradient-to-r from-accent to-accent2 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:-translate-y-0.5"
+            onClick={handleSubmit}
+            disabled={saving}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
       </div>
     </div>
   );

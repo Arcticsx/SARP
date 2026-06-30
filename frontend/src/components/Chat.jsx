@@ -1,28 +1,56 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { api } from '../api';
-import { ArrowUpIcon } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { api, getImageUrl } from '../api';
+import { ArrowUpIcon, PlusIcon } from 'lucide-react';
 
-function Chat({ persona, session, onBack }) {
-  const { sessionId: routeSessionId } = useParams();
-
+function Chat({ persona: propPersona, session: propSession, onBack }) {
+  const { personaKey, sessionId: routeSessionId } = useParams();
+  const navigate = useNavigate();
+  const [persona, setPersona] = useState(propPersona);
+  const [loadingPersona, setLoadingPersona] = useState(!propPersona);
   const [messages, setMessages] = useState([]);
   const [context, setContext] = useState([]);
-  const [sessionId, setSessionId] = useState(session?.id || routeSessionId || null);
+  const [sessionId, setSessionId] = useState(propSession?.id || routeSessionId || null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Derive the active session from props — single source of truth
-  const activeSession = session || (routeSessionId ? { id: parseInt(routeSessionId), persona_key: persona?.key } : null);
+  // Load persona from API if not provided (refresh case)
+  useEffect(() => {
+    if (propPersona) {
+      setPersona(propPersona);
+      setLoadingPersona(false);
+      return;
+    }
+    if (!personaKey) {
+      setLoadingPersona(false);
+      return;
+    }
+    setLoadingPersona(true);
+    api.getPersonalities()
+      .then(data => {
+        const found = data[personaKey];
+        if (found) {
+          setPersona(found);
+        } else {
+          alert('Personality not found');
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load personality:', err);
+        alert('Failed to load personality');
+      })
+      .finally(() => setLoadingPersona(false));
+  }, [propPersona, personaKey]);
+
+  const activeSession = propSession || (routeSessionId ? { id: parseInt(routeSessionId), persona_key: persona?.key } : null);
   const activeSessionId = activeSession?.id ?? null;
 
-  // Re-initialize whenever the active session identity changes
+  // Load session when persona and session are ready
   useEffect(() => {
     if (!persona?.key) return;
-
     let cancelled = false;
     setInitializing(true);
     setMessages([]);
@@ -45,7 +73,7 @@ function Chat({ persona, session, onBack }) {
       });
 
     return () => { cancelled = true; };
-  }, [persona?.key, activeSessionId]); // only thing that identifies a session is its id + persona
+  }, [persona?.key, activeSessionId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -66,8 +94,10 @@ function Chat({ persona, session, onBack }) {
       setMessages(data.messages);
       setContext(data.context);
 
-      const saveData = await api.saveSession(persona.key, data.messages, data.context, sessionId);
-      setSessionId(saveData.session_id);
+      // Auto-save after each message
+      await api.saveSession(persona.key, data.messages, data.context, sessionId)
+        .then(saveData => setSessionId(saveData.session_id))
+        .catch(err => console.warn('Auto-save failed:', err));
 
     } catch (error) {
       console.error('Failed to send message:', error);
@@ -78,23 +108,6 @@ function Chat({ persona, session, onBack }) {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
-  };
-
-  const handleSaveSession = async () => {
-    if (context.length === 0) {
-      alert('No messages to save');
-      return;
-    }
-    setLoading(true);
-    try {
-      const data = await api.saveSession(persona.key, messages, context, sessionId);
-      setSessionId(data.session_id);
-      alert('Session saved successfully!');
-    } catch (error) {
-      console.error('Failed to save session:', error);
-      alert('Failed to save session');
-    }
-    setLoading(false);
   };
 
   const handleInputChange = (e) => {
@@ -111,6 +124,27 @@ function Chat({ persona, session, onBack }) {
     }
   };
 
+  const handleNewChat = () => {
+    // Start a fresh chat with the same persona – navigate to chat without session id
+    navigate(`/chat/${persona.key}`, { state: { persona } });
+  };
+
+  if (loadingPersona) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg text-text">
+        <p className="text-muted">Loading personality…</p>
+      </div>
+    );
+  }
+
+  if (!persona) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-bg text-text text-rose-400">
+        <p>Personality not found.</p>
+      </div>
+    );
+  }
+
   if (initializing) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg text-text">
@@ -121,7 +155,6 @@ function Chat({ persona, session, onBack }) {
 
   return (
     <>
-      {/* Purple-themed scrollbar styles */}
       <style>{`
         .scrollbar-themed::-webkit-scrollbar {
           width: 6px;
@@ -130,11 +163,11 @@ function Chat({ persona, session, onBack }) {
           background: transparent;
         }
         .scrollbar-themed::-webkit-scrollbar-thumb {
-          background: #7c3aed; /* purple-600 */
+          background: #7c3aed;
           border-radius: 3px;
         }
         .scrollbar-themed::-webkit-scrollbar-thumb:hover {
-          background: #a78bfa; /* purple-400 */
+          background: #a78bfa;
         }
         .scrollbar-themed {
           scrollbar-width: thin;
@@ -143,13 +176,51 @@ function Chat({ persona, session, onBack }) {
       `}</style>
 
       <div className="mx-auto flex h-full max-w-5xl flex-col px-4 py-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex items-center gap-3 rounded-2xl border border-border/60 bg-surface/70 px-4 py-3 shadow-lg shadow-black/20">
-          <div className="flex-1">
-            <div className="text-base font-semibold text-text">{persona.name}</div>
-            <div className="text-sm text-muted">Session #{sessionId || 'New'}</div>
+        {/* Redesigned Header */}
+        <div className="mb-4 flex items-center justify-between rounded-2xl border border-border/60 bg-surface/70 px-4 py-3 shadow-lg shadow-black/20">
+          <div className="flex items-center gap-3">
+            {/* Avatar */}
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-accent2 to-accent">
+              {persona.avatar ? (
+                <img
+                  src={getImageUrl(persona.avatar)}
+                  alt={persona.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-950">
+                  {persona.name.charAt(0)}
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="text-base font-semibold text-text">{persona.name}</div>
+              <div className="text-xs text-muted">
+                {sessionId ? `Session #${sessionId}` : 'New Chat'}
+              </div>
+            </div>
+          </div>
+
+          {/* Right side: New Chat button + Back button */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleNewChat}
+              className="flex items-center gap-1 rounded-full bg-accent/20 px-3 py-1.5 text-sm font-medium text-accent transition hover:bg-accent/30 hover:text-white"
+              title="Start a new chat with this persona"
+            >
+              <PlusIcon size={16} />
+              <span className="hidden sm:inline">New</span>
+            </button>
+            <button
+              onClick={onBack}
+              className="rounded-full bg-white/10 px-3 py-1.5 text-sm text-muted transition hover:bg-white/20 hover:text-white"
+            >
+              ← Back
+            </button>
           </div>
         </div>
 
+        {/* Messages area */}
         <div className="scrollbar-themed mb-4 flex-1 overflow-y-auto rounded-2xl border border-border/50 bg-surface/60 p-4 shadow-inner shadow-black/20">
           <div className="flex flex-col gap-4">
             {messages.map((msg, index) => {
@@ -175,6 +246,7 @@ function Chat({ persona, session, onBack }) {
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Input */}
         <form onSubmit={handleSendMessage} className="flex items-end gap-2 rounded-2xl border border-border/40 bg-surface/70 p-3 shadow-lg shadow-black/20">
           <textarea
             ref={textareaRef}

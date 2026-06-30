@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from contextlib import contextmanager
 from models import Personality
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Session, Message, Context
 from models.dbbase import Base
@@ -18,22 +18,6 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
-@event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
-
-# ---------------------------------------------------------------------------
-# Models
-# ---------------------------------------------------------------------------
-
-
-
-# ---------------------------------------------------------------------------
-# Connection handling
-# ---------------------------------------------------------------------------
-
 @contextmanager
 def get_db():
     db = SessionLocal()
@@ -46,54 +30,50 @@ def get_db():
     finally:
         db.close()
 
-
 def init_db():
     """Initialize database tables."""
     Base.metadata.create_all(bind=engine)
-
-
-# ---------------------------------------------------------------------------
-# Queries
-# ---------------------------------------------------------------------------
 
 def get_sessions(db, persona_key: str):
     rows = (
         db.query(Session)
         .filter(Session.persona_key == persona_key)
         .order_by(Session.updated_at.desc())
-        .limit(5)
         .all()
     )
-    return [
-        {
-            "id": r.id,
-            "persona_key": r.persona_key,
-            "created_at": r.created_at,
-            "updated_at": r.updated_at,
-        }
-        for r in rows
-    ]
-
+    results = []
+    for s in rows:
+        # Get last user message for preview
+        last_msg = (
+            db.query(Message)
+            .filter(Message.session_id == s.id, Message.sender == "user")
+            .order_by(Message.id.desc())
+            .first()
+        )
+        preview = last_msg.content[:80] + "..." if last_msg else "No messages yet"
+        results.append({
+            "id": s.id,
+            "persona_key": s.persona_key,
+            "created_at": s.created_at,
+            "updated_at": s.updated_at,
+            "preview": preview
+        })
+    return results
 
 def get_recent_sessions(db):
-
     sessions = (
         db.query(Session)
         .order_by(Session.updated_at.desc())
         .limit(10)
         .all()
     )
-
     results = []
-
     for s in sessions:
-
         personality = (
             db.query(Personality)
             .filter(Personality.key == s.persona_key)
             .first()
         )
-
         last_message = (
             db.query(Message)
             .filter(
@@ -103,7 +83,6 @@ def get_recent_sessions(db):
             .order_by(Message.id.desc())
             .first()
         )
-
         results.append({
             "id": s.id,
             "persona_key": s.persona_key,
@@ -116,9 +95,7 @@ def get_recent_sessions(db):
                 last_message.content if last_message else None
             )
         })
-
     return results
-
 
 def get_session_by_index(db, persona_key, index: int, persona_id=None):
     row = (
@@ -139,11 +116,9 @@ def get_session_by_index(db, persona_key, index: int, persona_id=None):
         "updated_at": row.updated_at,
     }
 
-
 def load_session(db, persona, system_message, session=None):
     if session:
         session_id = session["id"]
-
         rows = (
             db.query(Message)
             .filter(Message.session_id == session_id)
@@ -156,13 +131,11 @@ def load_session(db, persona, system_message, session=None):
             .order_by(Context.id.asc())
             .all()
         )
-
         full_messages = [system_message]
         for row in rows:
             if row.sender == "system":
                 continue
             full_messages.append({"id": row.id, "role": row.sender, "content": row.content})
-
         context = [system_message]
         for row in context_rows:
             if row.sender == "system":
@@ -172,24 +145,18 @@ def load_session(db, persona, system_message, session=None):
         first_msg = persona.get("opening_prompt", "Introduce yourself and start the conversation.")
         full_messages = [system_message, {"role": "assistant", "content": first_msg}]
         context = [system_message.copy(), {"role": "assistant", "content": first_msg}]
-
     return context, full_messages
-
 
 def save_session(db, persona_key, messages=None, context=None, session_id=None):
     if messages is None:
         messages = []
     if context is None:
         context = []
-
     non_system_messages = [m for m in messages if m.get("role") != "system"]
     non_system_context = [m for m in context if m.get("role") != "system"]
-
     if not non_system_messages and not non_system_context:
         return None
-
     now = datetime.now(timezone.utc).isoformat()
-
     if session_id:
         db.query(Session).filter(Session.id == session_id).update(
             {"persona_key": persona_key, "updated_at": now}
@@ -201,26 +168,22 @@ def save_session(db, persona_key, messages=None, context=None, session_id=None):
             persona_key=persona_key, created_at=now, updated_at=now
         )
         db.add(new_session)
-        db.flush()  # populate new_session.id without committing
+        db.flush()
         session_id = new_session.id
-
     for msg in non_system_messages:
         role = msg.get("role")
         content = msg.get("content")
         if not isinstance(role, str) or not isinstance(content, str):
             continue
         db.add(Message(session_id=session_id, sender=role, content=content))
-
     for msg in non_system_context:
         role = msg.get("role")
         content = msg.get("content")
         if not isinstance(role, str) or not isinstance(content, str):
             continue
         db.add(Context(session_id=session_id, sender=role, content=content))
-
     print(f"Session {session_id} saved.")
     return session_id
-
 
 def delete_session(db, session_id):
     if not session_id:

@@ -42,7 +42,7 @@ function PersonalitySelector({ onPersonaSelected }) {
   };
 
   const handlePersonaClick = (persona) => {
-    onPersonaSelected(persona); // pass whole object, not just key
+    onPersonaSelected(persona);
   };
 
   const handleSavePersona = async (data) => {
@@ -129,7 +129,7 @@ function PersonalitySelector({ onPersonaSelected }) {
 
       <main className="flex flex-1 flex-col overflow-hidden px-6 pb-6 pt-0">
         <header className="flex flex-wrap items-center justify-between gap-4 py-5">
-          <div className=" group max-w-xl flex-1 flex items-center rounded-full border border-border/60 bg-surface/70 px-3 text-sm text-text transition focus-within:border-accent">
+          <div className="group max-w-xl flex-1 flex items-center rounded-full border border-border/60 bg-surface/70 px-3 text-sm text-text transition focus-within:border-accent">
             <input
               type="text"
               placeholder="Search personalities…"
@@ -165,11 +165,12 @@ function PersonalitySelector({ onPersonaSelected }) {
             <div className="space-y-4">
               <div>
                 <h2 className="mb-4 text-lg font-semibold text-accent">Discover</h2>
-                <div className="flex gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {/* 4‑column grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {filteredList.map((persona) => (
                     <div
                       key={persona.key}
-                      className="group relative flex items-center gap-4 w-[15%] cursor-pointer rounded-2xl border border-border/60 bg-surface/70 p-4 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-accent/40"
+                      className="group relative flex items-center gap-4 cursor-pointer rounded-2xl border border-border/60 bg-surface/70 p-4 shadow-lg shadow-black/20 transition hover:-translate-y-1 hover:border-accent/40 h-32 overflow-hidden"
                       onClick={() => handlePersonaClick(persona)}
                     >
                       {/* Square avatar */}
@@ -187,39 +188,31 @@ function PersonalitySelector({ onPersonaSelected }) {
                         )}
                       </div>
 
-                      {/* Info */}
-                      <div className="flex h-24 flex-1 flex-col justify-between">
-                        <div>
-                          <h3 className="text-base font-semibold text-text">
-                            {persona.name}
-                          </h3>
-                          <p className="mt-1 text-sm text-slate-300 line-clamp-2">
-                      {persona.description || "No description"}
-                    </p>
+                      {/* Info — fixed height */}
+                      <div className="flex h-24 flex-1 flex-col justify-between overflow-hidden">
+                        <div className="min-h-0 flex-1">
+                          <h3 className="text-base font-semibold text-text truncate">{persona.name}</h3>
+                          <p className="mt-1 text-sm text-slate-300 line-clamp-2 break-words">
+                            {persona.description || "No description"}
+                          </p>
                         </div>
 
-                        <div className="flex justify-between">
-                          <div className="flex gap-2 opacity-0 transition group-hover:opacity-100">
-                            <button
-                              className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-emerald-500/15 hover:text-emerald-200"
-                              onClick={(e) => handleEditPersona(e, persona)}
-                              title="Edit"
-                            >
-                              <span className="material-symbols-outlined text-base">
-                                edit
-                              </span>
-                            </button>
-
-                            <button
-                              className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-rose-500/15 hover:text-rose-200"
-                              onClick={(e) => handleDeletePersona(e, persona)}
-                              title="Delete"
-                            >
-                              <span className="material-symbols-outlined text-base">
-                                delete
-                              </span>
-                            </button>
-                          </div>
+                        {/* Edit/Delete buttons */}
+                        <div className="flex justify-end gap-2 opacity-0 transition group-hover:opacity-100">
+                          <button
+                            className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-emerald-500/15 hover:text-emerald-200"
+                            onClick={(e) => handleEditPersona(e, persona)}
+                            title="Edit"
+                          >
+                            <span className="material-symbols-outlined text-base">edit</span>
+                          </button>
+                          <button
+                            className="rounded-lg bg-white/10 px-3 py-1.5 text-sm text-slate-300 hover:bg-rose-500/15 hover:text-rose-200"
+                            onClick={(e) => handleDeletePersona(e, persona)}
+                            title="Delete"
+                          >
+                            <span className="material-symbols-outlined text-base">delete</span>
+                          </button>
                         </div>
                       </div>
                     </div>
