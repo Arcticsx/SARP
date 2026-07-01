@@ -8,3 +8,7 @@ aiofiles
 python-multipart
 pytest
 pytest-mock
+pymupdf4llm
+sqlalchemy
+langchain-text-splitters
+sentence_transformers

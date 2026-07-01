@@ -9,7 +9,8 @@ MODEL = os.getenv("MODEL_NAME")
 MONGO_URI = os.getenv("MONGO_URI")
 PROVIDER = os.getenv("PROVIDER")   # e.g. "openai", "anthropic", "ollama"
 API_KEY = os.getenv("API_KEY")
-
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")  # e.g. "thenlper/gte-small"
+CHROMA_PERSIST_DIR = os.getenv("CHROMA_PERSIST_DIR")
 # aisuite expects "provider:model-name" format, e.g. "openai:gpt-4o"
 AISUITE_MODEL = f"{PROVIDER}:{MODEL}" if PROVIDER and MODEL else None
 
