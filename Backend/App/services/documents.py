@@ -2,7 +2,11 @@ import pymupdf4llm
 import re
 from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 from sentence_transformers import SentenceTransformer
-from config import EMBEDDING_MODEL
+
+try:
+    from ..config import EMBEDDING_MODEL
+except ImportError:
+    from config import EMBEDDING_MODEL
 
 def extract_markdown_from_pdf(file_path):
     return pymupdf4llm.to_markdown(file_path)
@@ -14,10 +18,18 @@ def normalize_text(text):
     text = re.sub(r'\n{3,}', '\n\n', text)
     return text.strip()
 
-_embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+_embedding_model = None
+
+
+def _get_embedding_model():
+    global _embedding_model
+    if _embedding_model is None:
+        _embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+    return _embedding_model
+
 
 def token_length(text):
-    return len(_embedding_model.tokenizer.encode(text))
+    return len(_get_embedding_model().tokenizer.encode(text))
 
 def chunk_document(file_path):
     
@@ -49,7 +61,7 @@ def embed_chunks(chunks, batch_size: int = 32):
 
     texts = [chunk.page_content for chunk in chunks]
 
-    embeddings = _embedding_model.encode(
+    embeddings = _get_embedding_model().encode(
         texts,
         batch_size=batch_size,
         normalize_embeddings=True,

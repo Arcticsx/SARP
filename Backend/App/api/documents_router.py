@@ -13,8 +13,8 @@ try:
 except ImportError:
     from services.documents import chunk_document, embed_chunks
     from services.vectorstore import save_chunks_to_chromadb
-    from app.database import get_db
-    from app.models import SourceDocument
+    from database import get_db
+    from models import SourceDocument
 
 router = APIRouter(prefix="/story", tags=["documents"])
 
