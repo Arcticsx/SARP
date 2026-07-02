@@ -27,16 +27,14 @@ A CLI and web application for immersive roleplay conversations with AI-powered c
 ## Features
 
 - **Multiple AI Providers**: Works with OpenAI, Anthropic Claude, Deepseek and local Ollama models
-- **Persistent Sessions**: Conversations are saved and can be resumed later
+- **Persistent Sessions**: Conversations are saved locally and can be resumed later
 - **Custom Personalities**: Create and select different character personas
 - **Memory Management**: Automatic conversation trimming and summarization
-- **MongoDB Storage**: Session persistence using MongoDB
 
 ## Requirements
 
 - Python 3.11+ (tested on 3.13)
 - Node.js 18+ and npm
-- MongoDB (for session persistence)
 - API key for your chosen provider (OpenAI, Anthropic, or an Ollama-compatible provider)
 
 ## Quick Start
@@ -65,7 +63,6 @@ Create a `.env` file in the project root with the following variables:
 API_KEY=your_api_key_here
 PROVIDER=openai
 MODEL_NAME=gpt-4o-mini
-MONGO_URI=mongodb://localhost:27017
 ```
 
 **Provider Options:**
@@ -136,7 +133,6 @@ frontend/
 ## Dependencies
 
 - **aisuite** - Unified interface for multiple LLM providers
-- **pymongo** - MongoDB driver for Python
 - **python-dotenv** - Environment variable management
 - **pytest** - Testing framework
 
