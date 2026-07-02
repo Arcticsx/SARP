@@ -1,6 +1,19 @@
 # SARP — Local AI Conversational App
 
-A CLI application for immersive roleplay conversations with AI-powered characters. Supports multiple LLM providers (OpenAI, Anthropic Claude, Ollama, Deepseek) with persistent sessions and customizable personalities.
+A CLI and web application for immersive roleplay conversations with AI-powered characters. It supports multiple LLM providers (OpenAI, Anthropic Claude, Ollama, and DeepSeek), persistent sessions, and customizable personalities.
+
+## Table of Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Quick Start](#quick-start)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+
 ### **Languages**
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
@@ -83,26 +96,40 @@ npm run frontend
 
 ## Project Structure
 
-```
+```text
 Backend/
 ├── App/
-│   ├── main.py            # Entry point
-│   ├── chat.py            # Main chat loop and orchestration
-│   ├── cli.py             # CLI utilities (formatting, input/output)
-│   ├── config.py          # Configuration and environment loading
-│   ├── database.py        # Session persistence
-│   ├── memory.py          # Conversation summarization and trimming
-│   ├── personalities.py   # Personality definitions and selection
-│   ├── response.py        # LLM provider integration
-│   └── api/
-│       └── router.py      # FastAPI endpoints
-└── tests/
-    ├── conftest.py        # Test fixtures
-    ├── test_personalities.py
-    └── test_memory.py
+│   ├── api/
+│   │   ├── chat_router.py
+│   │   ├── chronicle_router.py
+│   │   └── documents_router.py
+│   ├── models/
+│   │   ├── dbbase.py
+│   │   ├── models.py
+│   │   └── rpg_sessions.py
+│   ├── services/
+│   │   ├── documents.py
+│   │   ├── ingestion.py
+│   │   └── vectorstore.py
+│   ├── main.py
+│   ├── chat.py
+│   ├── cli.py
+│   ├── config.py
+│   ├── database.py
+│   ├── memory.py
+│   ├── personalities.py
+│   └── response.py
+├── tests/
+│   ├── conftest.py
+│   └── test_*.py
 
 frontend/
 ├── src/
+│   ├── components/
+│   ├── api.js
+│   ├── App.jsx
+│   └── index.jsx
+├── index.html
 └── package.json
 ```
 
@@ -118,7 +145,7 @@ frontend/
 Run the test suite:
 
 ```powershell
-cd backend
+cd Backend
 pytest
 ```
 
